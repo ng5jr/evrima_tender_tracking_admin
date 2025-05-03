@@ -1,0 +1,366 @@
+body {
+  font-family: 'Big Caslon', 'Times New Roman', serif !important;
+}
+
+.feedback-analytics {
+  font-family: 'Big Caslon', 'Times New Roman', serif;
+  margin: 15px auto;
+  /* Reduced margin for mobile */
+  padding: 15px;
+  /* Reduced padding for mobile */
+  border: 1px solid #333;
+  border-radius: 8px;
+  /* Slightly smaller radius for mobile */
+  background-color: #222;
+  color: #fff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  /* Less pronounced shadow */
+  max-width: 800px;
+  /* Take up full width on mobile */
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+
+.feedback-analytics h2 {
+  font-family: 'Big Caslon', 'Times New Roman', serif;
+  text-align: center;
+  /* Reduced margin */
+  color: #fff;
+  font-size: 2em;
+  /* Smaller heading for mobile */
+  font-weight: 500;
+}
+
+.feedback-analytics p {
+  font-family: 'Big Caslon', 'Times New Roman', serif;
+  text-align: center;
+  margin: 0;
+
+}
+
+.sign-button-selected {
+  background-color: #007bff;
+  color: #fff;
+  border-color: #007bff;
+  font-weight: 500;
+}
+
+.auth-options {
+  display: flex;
+  justify-content: center;
+}
+
+@media (min-width: 600px) {
+  .feedback-analytics {
+    max-width: 600px;
+    margin: 20px auto;
+    padding: 25px;
+  }
+}
+
+.Btn {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition-duration: .3s;
+  background: linear-gradient(0deg, rgba(20, 167, 62, 1) 0%, rgba(102, 247, 113, 1) 100%);
+  position: absolute;
+  top: 25px;
+  right: 25px;
+}
+
+
+.analytics-button {
+  left: 25px;
+  background-color: green;
+}
+
+.loading-data {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 60vh;
+  font-size: 1.5em;
+  color: #fff;
+}
+
+.chart-toggle-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  flex-grow: 1;
+}
+
+.chart-toggle-buttons button {
+  margin: 0 5px;
+  padding: 10px 20px;
+  font-size: 1em;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+
+  color: #fff;
+
+  background: #555;
+  cursor: pointer;
+  margin: 0;
+  flex: 1;
+  font-family: proxima-nova, Arial Unicode, sans-serif !important;
+}
+
+.chart-toggle-buttons button:disabled {
+  background: linear-gradient(180deg, #4B91F7 0%, #367AF6 100%);
+  background-origin: border-box;
+  box-shadow: 0px 0.5px 1.5px rgba(54, 122, 246, 0.25), inset 0px 0.8px 0px -0.25px rgba(255, 255, 255, 0.2);
+}
+
+.chart-container {
+  width: 100%;
+  aspect-ratio: 4/3;
+
+}
+
+/* --- All Comments Section Styling --- */
+
+.all-comments-section {
+  margin: 0;
+  /* Add top/bottom margin, center horizontally */
+  padding: 20px;
+  /* Inner spacing */
+
+  /* Max width for the section */
+
+  /* Light border */
+  background-color: #333;
+  /* Light background */
+  border-radius: 8px;
+  /* Rounded corners */
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  /* Subtle shadow */
+}
+
+.all-comments-section h3 {
+  text-align: center;
+  /* Center the heading */
+  margin: 0;
+  /* Remove default top margin */
+
+  color: #ffffff;
+  /* Darker heading color */
+}
+
+.comments-list {
+  max-height: 200px;
+  /* Limit height and enable scrolling */
+  overflow-y: auto;
+  /* Add vertical scrollbar when needed */
+  /* Border around the scrollable list */
+  padding: 15px;
+  /* Padding inside the list area */
+
+  /* White background for the list */
+  border-radius: 4px;
+  /* Slightly rounded corners for the list box */
+  text-align: left;
+
+  /* Align comment text left */
+}
+
+/* Style the unordered list directly if needed, otherwise defaults are fine */
+.comments-list-ul {
+  /* Target class if you added it, or just ul */
+  list-style: none;
+  /* Remove default bullet points */
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.comments-list-ul li p {
+  text-align: left !important;
+  border-bottom: 1px dashed #ccc;
+
+  /* Separator line between comments */
+}
+
+/* Remove border from the very last comment item */
+.comments-list li:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+/* Styling for the main comment paragraph */
+.comments-list li p {
+
+  /* Remove top margin, add space below comment text */
+  line-height: 1.5;
+  /* Improve readability */
+  white-space: pre-wrap;
+  /* Respect line breaks entered in the comment */
+  word-wrap: break-word;
+  /* Ensure long words don't overflow */
+  color: #999;
+  /* Standard text color */
+}
+
+/* Styling for the timestamp/metadata */
+.comments-list li small {
+  color: white;
+  /* Darker grey for less emphasis */
+  font-size: 0.85em;
+  /* Slightly smaller font */
+  display: block;
+  /* Ensure it appears below the comment paragraph */
+}
+
+/* Styling for Loading/Error/No Comments messages */
+.comments-list>p {
+  /* Style direct <p> children inside .comments-list */
+  text-align: center;
+  padding: 20px;
+  color: #666;
+  font-style: italic;
+}
+
+/* --- Styling for the Date Selector Dropdown --- */
+
+.date-selector {
+  display: flex;
+  /* Align label and select nicely */
+  align-items: center;
+  /* Vertically center items */
+  justify-content: center;
+  /* Center the whole selector horizontally */
+  gap: 8px;
+  /* Space between label and select */
+
+  /* Space below the selector */
+}
+
+.date-selector label {
+  font-weight: bold;
+  color: white;
+  margin: 0;
+  /* Remove default margins if needed */
+}
+
+.date-selector select {
+  padding: 4px 4px;
+  /* Comfortable padding inside the select */
+  /* Standard border */
+  border-radius: 4px;
+  /* Slightly rounded corners */
+  background-color: #fff;
+  /* White background */
+  font-size: 0.95em;
+  /* Adjust font size as needed */
+  min-width: fit-content;
+  width: fit-content;
+  /* Ensure it has a decent minimum width */
+  cursor: pointer;
+  /* Indicate it's clickable */
+  transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  /* Smooth transitions */
+  appearance: none;
+  background-color: #555;
+  color: white;
+  text-align: center;
+  /* Remove default system appearance (optional, for more custom styling) */
+  /* Add custom arrow indicator if needed when using appearance: none */
+  /* background-image: url('data:image/svg+xml;charset=US-ASCII,<svg ...>'); */
+  /* background-repeat: no-repeat; */
+  /* background-position: right 10px center; */
+  /* background-size: 1em; */
+}
+
+/* Style when the select element is focused */
+.date-selector select:focus {
+  border-color: #007bff;
+  /* Highlight border on focus (example blue) */
+  outline: none;
+  /* Remove default browser outline */
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+  /* Add a subtle glow on focus */
+}
+
+/* Style when the select element is disabled */
+.date-selector select:disabled {
+  background-color: #e9ecef;
+  /* Greyed-out background */
+  cursor: not-allowed;
+  /* Indicate it's not clickable */
+  opacity: 0.7;
+  /* Make it slightly faded */
+}
+
+/* Optional: Style the dropdown options */
+.date-selector select option {
+  padding: 5px;
+  /* Add padding to options if needed */
+}
+
+.all-comments-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+@media (max-width: 600px) {
+  .Btn {
+    top: 15px;
+    right: 15px;
+
+  }
+
+  .analytics-button {
+    left: 15px;
+    top: 15px;
+  }
+
+  .date-selector select {
+    font-size: 0.8em;
+    padding: 2px 2px;
+  }
+
+  .comments-list {
+    padding: 0;
+    /* Limit height and enable scrolling */
+  }
+}
+
+.btn-signout {
+  background: linear-gradient(0deg, rgb(167, 20, 20) 0%, rgb(247, 102, 102) 100%);
+}
+
+.btn-signout {
+  background: linear-gradient(0deg, rgb(167, 20, 20) 0%, rgb(247, 102, 102) 100%);
+}
+
+@media (min-width: 840px) {
+  .Btn {
+    width: 50px;
+    height: 50px;
+    /* Increase padding for larger size */
+  }
+
+  .Btn .sign svg {
+    width: 20px;
+    height: 20px;
+    /* Increase padding for larger size */
+  }
+}

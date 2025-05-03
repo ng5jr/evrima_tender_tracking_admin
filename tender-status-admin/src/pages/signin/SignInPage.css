@@ -1,0 +1,177 @@
+/* src/pages/signin/SignInPage.css */
+
+.signin-container {
+    max-width: 450px;
+    /* Adjust max width as needed */
+    margin: 40px auto;
+    /* Centers the container horizontally with space top/bottom */
+    padding: 30px;
+    border: 1px solid #555;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    background-color: #333;
+    text-align: center;
+    /* Center aligns text within the container */
+
+}
+
+.signin-container h2 {
+
+    /* Add space above the second section title */
+    margin-bottom: 15px;
+    color: #ffffff;
+    font-size: 1.5em;
+    font-weight: 100;
+}
+
+
+
+.signin-container small {
+    color: #ffffff8e;
+    font-size: 0.9em;
+}
+
+.signin-container div {
+    margin-bottom: 20px;
+    /* Space between sections */
+}
+
+.signin-container form {
+    display: flex;
+    flex-direction: column;
+    /* Stack input and button vertically */
+    align-items: center;
+    /* Center form elements */
+    gap: 15px;
+    /* Space between input and button */
+
+}
+
+.signin-container input[type="email"] {
+    padding: 12px 15px;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #555;
+    background-color: #555;
+    color: #ffffff9a;
+    font-size: 1em;
+    font-weight: 400;
+    line-height: 1em;
+    font-family: 'Big Caslon', 'Times New Roman', serif !important;
+}
+
+.signin-container button {
+    font-family: proxima-nova, Arial Unicode, sans-serif !important;
+    padding: 12px 25px;
+    border: none;
+    border-radius: 4px;
+    background-color: #007bff;
+    /* Example blue */
+    color: white;
+    font-size: 1em;
+    font-weight: 100;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    min-width: 150px;
+    width: 100%;
+    /* Give buttons a minimum width */
+}
+
+.signin-container button:hover {
+    background-color: #0056b3;
+    /* Darker blue on hover */
+}
+
+.signin-container button:disabled {
+    background-color: #cccccc;
+    /* Grey out disabled buttons */
+    cursor: not-allowed;
+}
+
+.error-message {
+    color: white;
+    /* Red for errors */
+    background-color: red;
+    /* Light red background */
+    border: 1px solid #f5c6cb;
+    padding: 10px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+    font-weight: bold;
+}
+
+.success-message {
+    color: #155724;
+    /* Green for success */
+    background-color: #d4edda;
+    /* Light green background */
+    border: 1px solid #c3e6cb;
+    padding: 10px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+    font-weight: bold;
+}
+
+/* Basic Responsiveness */
+@media (max-width: 500px) {
+    .signin-container {
+        margin: 20px 15px;
+        padding: 20px;
+    }
+
+    .signin-container h1 {
+        font-size: 1.8em;
+    }
+
+    .signin-container h2 {
+        font-size: 1.3em;
+    }
+
+    .signin-container input[type="email"] {
+        width: 100%;
+        font-size: 0.8em;
+    }
+}
+
+.divider {
+    display: flex;
+    /* Enable Flexbox layout */
+    align-items: center;
+    /* Vertically center items (the text and the lines) */
+    text-align: center;
+    /* Center the text itself */
+    margin: 20px 0;
+    /* Add some vertical space around the divider */
+    color: white;
+    /* Optional: Set color for the text */
+    font-size: 0.9em;
+    /* Optional: Adjust text size */
+    font-weight: bold;
+    /* Optional: Make text bold */
+}
+
+/* Style the lines using pseudo-elements */
+.divider::before,
+.divider::after {
+    content: '';
+    /* Necessary for pseudo-elements to be generated */
+    flex-grow: 1;
+    /* Allow the lines to grow and fill available space */
+    height: 1px;
+    /* Thickness of the line */
+    background-color: #ccc;
+    /* Color of the line */
+}
+
+/* Add spacing between the text and the lines */
+.divider::before {
+    margin-right: 0.5em;
+    /* Space to the left of the text */
+}
+
+.divider::after {
+    margin-left: 0.5em;
+    /* Space to the right of the text */
+}
