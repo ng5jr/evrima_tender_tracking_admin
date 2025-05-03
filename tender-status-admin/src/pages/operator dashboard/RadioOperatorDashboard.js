@@ -196,12 +196,10 @@ function RadioOperatorDashboard() {
 
   // Asynchronous function to handle clearing all notifications.
   const handleClearNotifications = async () => {
-    // Check if the user is logged in and get confirmation from the user before proceeding.
-    if (
-      window.confirm(
-        "Are you sure you want to clear all notifications? This cannot be undone."
-      )
-    ) {
+    // Ask the user to type 'EVRIMA' to confirm deletion
+    const userInput = prompt("Type 'EVRIMA' to confirm deletion of all notifications:");
+
+    if (userInput === 'EVRIMA') {
       try {
         // Retrieve all documents from the 'guestNotifications' collection.
         const querySnapshot = await getDocs(
@@ -217,6 +215,9 @@ function RadioOperatorDashboard() {
         // If an error occurs during clearing, log it to the console.
         console.error("Error clearing notifications: ", error);
       }
+    } else if (userInput !== null) {
+      // Show error if wrong text was entered (but not if user clicked Cancel)
+      alert("Incorrect confirmation text. Notifications were not deleted.");
     }
   };
 
