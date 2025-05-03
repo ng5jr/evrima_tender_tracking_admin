@@ -98,18 +98,16 @@ function RadioOperatorDashboard() {
       if (currentDirection === "SHORESIDE") {
         locationText = "the pier";
       } else if (currentDirection === "SHIPSIDE") {
-        locationText = "ILMA";
+        locationText = "Evrima";
       }
 
       let preview = "";
       if (currentAction === "ARRIVING") {
-        preview = `A tender is arriving ${
-          currentDirection === "SHIPSIDE" ? "" : "at"
-        } ${locationText} in less than 5 minutes.`;
+        preview = `A tender is arriving ${currentDirection === "SHIPSIDE" ? "" : "at"
+          } ${locationText} in less than 5 minutes.`;
       } else if (currentAction === "ARRIVED") {
-        preview = `A tender has arrived ${
-          currentDirection === "SHIPSIDE" ? "" : "at"
-        } ${locationText}.`;
+        preview = `A tender has arrived ${currentDirection === "SHIPSIDE" ? "" : "at"
+          } ${locationText}.`;
       } else if (currentAction === "DEPARTING") {
         preview = `A tender is departing from ${locationText} in less than 5 minutes.`;
       } else {
@@ -139,8 +137,8 @@ function RadioOperatorDashboard() {
           departureLocation = "the pier";
         } else if (direction === "SHIPSIDE") {
           arrivalPreposition = "";
-          arrivalLocation = "to ILMA";
-          departureLocation = "ILMA";
+          arrivalLocation = "to Evrima";
+          departureLocation = "Evrima";
         }
 
         if (action === "ARRIVING") {
@@ -296,28 +294,25 @@ function RadioOperatorDashboard() {
           <button
             key="arriving"
             onClick={() => handleActionClick("ARRIVING")}
-            className={`action-button ${
-              isCustomMessageMode ? "action-button-disabled" : ""
-            } ${action === "ARRIVING" ? "action-button-selected" : ""}`}
-            // Disable the button if in custom message mode
+            className={`action-button ${isCustomMessageMode ? "action-button-disabled" : ""
+              } ${action === "ARRIVING" ? "action-button-selected" : ""}`}
+          // Disable the button if in custom message mode
           >
             ARRIVING
           </button>
           <button
             key="arrived"
             onClick={() => handleActionClick("ARRIVED")}
-            className={`action-button ${
-              isCustomMessageMode ? "action-button-disabled" : ""
-            }  ${action === "ARRIVED" ? "action-button-selected" : ""}`}
+            className={`action-button ${isCustomMessageMode ? "action-button-disabled" : ""
+              }  ${action === "ARRIVED" ? "action-button-selected" : ""}`}
           >
             ARRIVED
           </button>
           <button
             key="departing"
             onClick={() => handleActionClick("DEPARTING")}
-            className={`action-button ${
-              isCustomMessageMode ? "action-button-disabled" : ""
-            }  ${action === "DEPARTING" ? "action-button-selected" : ""}`}
+            className={`action-button ${isCustomMessageMode ? "action-button-disabled" : ""
+              }  ${action === "DEPARTING" ? "action-button-selected" : ""}`}
           >
             DEPARTING
           </button>
@@ -329,18 +324,16 @@ function RadioOperatorDashboard() {
           <button
             key="shoreside"
             onClick={() => handleDirectionClick("SHORESIDE")}
-            className={`direction-button ${
-              isCustomMessageMode ? "action-button-disabled" : ""
-            }  ${direction === "SHORESIDE" ? "direction-button-selected" : ""}`}
+            className={`direction-button ${isCustomMessageMode ? "action-button-disabled" : ""
+              }  ${direction === "SHORESIDE" ? "direction-button-selected" : ""}`}
           >
             SHORESIDE
           </button>
           <button
             key="shipside"
             onClick={() => handleDirectionClick("SHIPSIDE")}
-            className={`direction-button ${
-              isCustomMessageMode ? "action-button-disabled" : ""
-            }  ${direction === "SHIPSIDE" ? "direction-button-selected" : ""}`}
+            className={`direction-button ${isCustomMessageMode ? "action-button-disabled" : ""
+              }  ${direction === "SHIPSIDE" ? "direction-button-selected" : ""}`}
           >
             SHIPSIDE
           </button>
@@ -350,9 +343,8 @@ function RadioOperatorDashboard() {
       <div className="direction-buttons-container">
         <button
           onClick={handleCustomMessageButtonClick}
-          className={`direction-button ${
-            isCustomMessageMode ? "custom-message-button-selected" : ""
-          }`}
+          className={`direction-button ${isCustomMessageMode ? "custom-message-button-selected" : ""
+            }`}
         >
           {isCustomMessageMode
             ? "CUSTOM MESSAGE ENABLED"

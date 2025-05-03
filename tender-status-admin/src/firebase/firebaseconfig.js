@@ -35,7 +35,7 @@ const googleAuthProvider = new GoogleAuthProvider(); // Initialize Google provid
 // --- Define and Export Auth Functions ---
 
 // Gmail Sign-In (Restricted)
-const ALLOWED_GMAIL = "ilmatenderrcyc@gmail.com"; // Make sure this is correct
+const ALLOWED_GMAIL = "evrimatenderrcyc@gmail.com"; // Make sure this is correct
 
 export const handleGoogleSignIn = async () => {
   try {
@@ -90,12 +90,12 @@ export const sendEmailLink = async (
   }
 
   // --- DYNAMICALLY CREATE REDIRECT URL ---
-  // window.location.origin gives you the base URL (e.g., "http://localhost:3000" or "https://admin.ilmatenderstatus.com")
+  // window.location.origin gives you the base URL (e.g., "http://localhost:3000" or "https://admin.Evrimatenderstatus.com")
   const redirectUrl = `${window.location.origin}/email-link-signin/verify`;
   console.log("SENDING LINK - Using redirectUrl:", redirectUrl); // Keep this for debugging
   // ---------------------------------------
 
-  // Make sure the domain part of this 'redirectUrl' (e.g., localhost OR admin.ilmatenderstatus.com)
+  // Make sure the domain part of this 'redirectUrl' (e.g., localhost OR admin.Evrimatenderstatus.com)
   // is listed in your Firebase Authentication -> Settings -> Authorized domains.
 
   try {
