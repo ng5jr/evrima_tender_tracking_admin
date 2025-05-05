@@ -162,7 +162,7 @@ function RadioOperatorDashboard() {
         } else if (action === "ARRIVED") {
           formattedMessage = `${tenderPrefix}has arrived ${arrivalPreposition} ${arrivalLocation}.`;
         } else if (action === "DEPARTING") {
-          formattedMessage = `${tenderPrefix}is departing ${departurePreposition} ${departureLocation} in less than 5 minutes.`;
+          formattedMessage = `${tenderPrefix}is departing ${departurePreposition} ${departureLocation} now.`;
         } else {
           formattedMessage = `${tenderPrefix}is ${action} ${locationText}.`;
         }
