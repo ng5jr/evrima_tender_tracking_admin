@@ -21,7 +21,7 @@ import { Link } from "react-router-dom";
 
 // Define the main functional component for the Radio Operator Dashboard.
 function RadioOperatorDashboard() {
-  // State variable to store the selected action (e.g., 'ARRIVING', 'DEPARTING').
+  // State variable to store the selected action (e.g., 'ARRIVING', 'ARRIVED', 'DEPARTING').
   const [action, setAction] = useState("");
   // State variable to store the selected direction or location (e.g., 'SHORESIDE', 'SHIPSIDE').
   const [direction, setDirection] = useState("");
@@ -33,6 +33,8 @@ function RadioOperatorDashboard() {
   const [isCustomMessageMode, setIsCustomMessageMode] = useState(false);
   // State variable to store an array of guest notifications fetched from Firebase.
   const [notifications, setNotifications] = useState([]);
+  // Add a new state variable to track the selected tender
+  const [selectedTender, setSelectedTender] = useState("");
 
   // useEffect hook to handle side effects like setting up Firebase authentication listener and fetching initial notifications.
   useEffect(() => {
@@ -89,9 +91,19 @@ function RadioOperatorDashboard() {
     }
   };
 
+  // Function to handle clicks on tender buttons
+  const handleTenderClick = (tenderNumber) => {
+    // Only update the tender if not in custom message mode
+    if (!isCustomMessageMode) {
+      setSelectedTender(tenderNumber);
+      // Update the preview message with the new tender selection
+      updatePreview(action, direction, tenderNumber);
+    }
+  };
+
   // Function to update the preview message based on the selected action and direction.
-  const updatePreview = (currentAction, currentDirection) => {
-    // Check if both an action and a direction have been selected.
+  const updatePreview = (currentAction, currentDirection, currentTender = selectedTender) => {
+    // Check if both an action and a direction have been selected
     if (currentAction && currentDirection) {
       let locationText = currentDirection;
 
@@ -102,16 +114,18 @@ function RadioOperatorDashboard() {
       }
 
       let preview = "";
+      const tenderPrefix = currentTender ? `${currentTender} ` : "A tender ";
+
       if (currentAction === "ARRIVING") {
-        preview = `A tender is arriving ${currentDirection === "SHIPSIDE" ? "" : "at"
+        preview = `${tenderPrefix}is arriving ${currentDirection === "SHIPSIDE" ? "" : "at"
           } ${locationText} in less than 5 minutes.`;
       } else if (currentAction === "ARRIVED") {
-        preview = `A tender has arrived ${currentDirection === "SHIPSIDE" ? "" : "at"
+        preview = `${tenderPrefix}has arrived ${currentDirection === "SHIPSIDE" ? "" : "at"
           } ${locationText}.`;
       } else if (currentAction === "DEPARTING") {
-        preview = `A tender is departing from ${locationText} in less than 5 minutes.`;
+        preview = `${tenderPrefix}is departing from ${locationText} now.`;
       } else {
-        preview = `A tender is ${currentAction} ${locationText}.`;
+        preview = `${tenderPrefix}is ${currentAction} ${locationText}.`;
       }
       setPreviewMessage(preview);
     } else {
@@ -141,14 +155,16 @@ function RadioOperatorDashboard() {
           departureLocation = "Evrima";
         }
 
+        const tenderPrefix = selectedTender ? `${selectedTender} ` : "A tender ";
+
         if (action === "ARRIVING") {
-          formattedMessage = `A tender is arriving ${arrivalPreposition} ${arrivalLocation} in less than 5 minutes.`;
+          formattedMessage = `${tenderPrefix}is arriving ${arrivalPreposition} ${arrivalLocation} in less than 5 minutes.`;
         } else if (action === "ARRIVED") {
-          formattedMessage = `A tender has arrived ${arrivalPreposition} ${arrivalLocation}.`;
+          formattedMessage = `${tenderPrefix}has arrived ${arrivalPreposition} ${arrivalLocation}.`;
         } else if (action === "DEPARTING") {
-          formattedMessage = `A tender is departing ${departurePreposition} ${departureLocation} in less than 5 minutes.`;
+          formattedMessage = `${tenderPrefix}is departing ${departurePreposition} ${departureLocation} in less than 5 minutes.`;
         } else {
-          formattedMessage = `A tender is ${action} ${locationText}.`;
+          formattedMessage = `${tenderPrefix}is ${action} ${locationText}.`;
         }
       }
 
@@ -156,12 +172,14 @@ function RadioOperatorDashboard() {
         await addDoc(collection(db, "guestNotifications"), {
           message: formattedMessage,
           action: action,
-          direction: direction, // Still store the raw direction
+          direction: direction,
+          tender: selectedTender, // Store the tender information
           timestamp: serverTimestamp(),
         });
 
         setAction("");
         setDirection("");
+        setSelectedTender(""); // Reset the selected tender
         setPreviewMessage("");
         setCustomMessage("");
         setIsCustomMessageMode(false);
@@ -196,10 +214,12 @@ function RadioOperatorDashboard() {
 
   // Asynchronous function to handle clearing all notifications.
   const handleClearNotifications = async () => {
-    // Ask the user to type 'EVRIMA' to confirm deletion
-    const userInput = prompt("Type 'EVRIMA' to confirm deletion of all notifications:");
-
-    if (userInput === 'EVRIMA') {
+    // Check if the user is logged in and get confirmation from the user before proceeding.
+    if (
+      window.confirm(
+        "Are you sure you want to clear all notifications? This cannot be undone."
+      )
+    ) {
       try {
         // Retrieve all documents from the 'guestNotifications' collection.
         const querySnapshot = await getDocs(
@@ -215,23 +235,18 @@ function RadioOperatorDashboard() {
         // If an error occurs during clearing, log it to the console.
         console.error("Error clearing notifications: ", error);
       }
-    } else if (userInput !== null) {
-      // Show error if wrong text was entered (but not if user clicked Cancel)
-      alert("Incorrect confirmation text. Notifications were not deleted.");
     }
   };
 
   // Function to handle toggling the custom message mode.
   const handleCustomMessageButtonClick = () => {
-    // Toggle the 'isCustomMessageMode' state.
     setIsCustomMessageMode(!isCustomMessageMode);
-    // If entering custom message mode, clear the selected action, direction, and preview.
     if (!isCustomMessageMode) {
       setAction("");
       setDirection("");
+      setSelectedTender(""); // Clear the selected tender
       setPreviewMessage("");
     }
-    // If exiting custom message mode, clear the custom message input.
     if (isCustomMessageMode) {
       setCustomMessage("");
     }
@@ -289,10 +304,55 @@ function RadioOperatorDashboard() {
         </div>
       </Link>
       <h2>TENDER STATUS</h2>
-      <p>Select Action:</p>
+      <p>Select Tender:</p>
       <div>
         <div className="action-buttons-container">
           <button
+            key="tender1"
+            onClick={() => handleTenderClick("Tender 1")}
+            className={`action-button ${isCustomMessageMode ? "action-button-disabled" : ""
+              } ${selectedTender === "Tender 1" ? "action-button-selected" : ""}`}
+          >
+            TENDER 1
+          </button>
+          <button
+            key="tender2"
+            onClick={() => handleTenderClick("Tender 2")}
+            className={`action-button ${isCustomMessageMode ? "action-button-disabled" : ""
+              } ${selectedTender === "Tender 2" ? "action-button-selected" : ""}`}
+          >
+            TENDER 2
+          </button>
+          <button
+            key="tender3"
+            onClick={() => handleTenderClick("Tender 3")}
+            className={`action-button ${isCustomMessageMode ? "action-button-disabled" : ""
+              } ${selectedTender === "Tender 3" ? "action-button-selected" : ""}`}
+          >
+            TENDER 3
+          </button>
+          <button
+            key="tender4"
+            onClick={() => handleTenderClick("Tender 4")}
+            className={`action-button ${isCustomMessageMode ? "action-button-disabled" : ""
+              } ${selectedTender === "Tender 4" ? "action-button-selected" : ""}`}
+          >
+            TENDER 4
+          </button>
+          <button
+            key="tender5"
+            onClick={() => handleTenderClick("Tender 5")}
+            className={`action-button ${isCustomMessageMode ? "action-button-disabled" : ""
+              } ${selectedTender === "Tender 5" ? "action-button-selected" : ""}`}
+          >
+            TENDER 5
+          </button>
+        </div>
+      </div>
+      <p>Select Action:</p>
+      <div>
+        <div className="action-buttons-container">
+          {/* <button
             key="arriving"
             onClick={() => handleActionClick("ARRIVING")}
             className={`action-button ${isCustomMessageMode ? "action-button-disabled" : ""
@@ -300,7 +360,7 @@ function RadioOperatorDashboard() {
           // Disable the button if in custom message mode
           >
             ARRIVING
-          </button>
+          </button> */}
           <button
             key="arrived"
             onClick={() => handleActionClick("ARRIVED")}
@@ -340,6 +400,8 @@ function RadioOperatorDashboard() {
           </button>
         </div>
       </div>
+      {/* Add this after the direction buttons section */}
+
       <p>Custom message notification:</p>
       <div className="direction-buttons-container">
         <button
