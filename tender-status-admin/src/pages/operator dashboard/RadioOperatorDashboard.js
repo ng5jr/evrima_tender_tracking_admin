@@ -21,7 +21,7 @@ import { Link } from "react-router-dom";
 
 // Define the main functional component for the Radio Operator Dashboard.
 function RadioOperatorDashboard() {
-  // State variable to store the selected action (e.g., 'ARRIVING', 'ARRIVED', 'DEPARTING').
+  // State variable to store the selected action (e.g., 'ARRIVING', 'ARRIVED', 'DEPARTED').
   const [action, setAction] = useState("");
   // State variable to store the selected direction or location (e.g., 'SHORESIDE', 'SHIPSIDE').
   const [direction, setDirection] = useState("");
@@ -69,7 +69,7 @@ function RadioOperatorDashboard() {
     };
   }, []); // The empty dependency array ensures this effect runs only once after the initial render.
 
-  // Function to handle clicks on action buttons (ARRIVING, ARRIVED, DEPARTING).
+  // Function to handle clicks on action buttons (ARRIVING, ARRIVED, DEPARTED).
   const handleActionClick = (selectedAction) => {
     // Only update the action if not in custom message mode.
     if (!isCustomMessageMode) {
@@ -122,8 +122,8 @@ function RadioOperatorDashboard() {
       } else if (currentAction === "ARRIVED") {
         preview = `${tenderPrefix}has arrived ${currentDirection === "SHIPSIDE" ? "" : "at"
           } ${locationText}.`;
-      } else if (currentAction === "DEPARTING") {
-        preview = `${tenderPrefix}is departing from ${locationText} now.`;
+      } else if (currentAction === "DEPARTED") {
+        preview = `${tenderPrefix}has departed from ${locationText}.`;
       } else {
         preview = `${tenderPrefix}is ${currentAction} ${locationText}.`;
       }
@@ -161,8 +161,8 @@ function RadioOperatorDashboard() {
           formattedMessage = `${tenderPrefix}is arriving ${arrivalPreposition} ${arrivalLocation} in less than 5 minutes.`;
         } else if (action === "ARRIVED") {
           formattedMessage = `${tenderPrefix}has arrived ${arrivalPreposition} ${arrivalLocation}.`;
-        } else if (action === "DEPARTING") {
-          formattedMessage = `${tenderPrefix}is departing ${departurePreposition} ${departureLocation} now.`;
+        } else if (action === "DEPARTED") {
+          formattedMessage = `${tenderPrefix}has departed ${departurePreposition} ${departureLocation}.`;
         } else {
           formattedMessage = `${tenderPrefix}is ${action} ${locationText}.`;
         }
@@ -347,6 +347,30 @@ function RadioOperatorDashboard() {
           >
             TENDER 5
           </button>
+          <button
+            key="tender6"
+            onClick={() => handleTenderClick("Tender 6")}
+            className={`action-button ${isCustomMessageMode ? "action-button-disabled" : ""
+              } ${selectedTender === "Tender 6" ? "action-button-selected" : ""}`}
+          >
+            TENDER 6
+          </button>
+          <button
+            key="tender7"
+            onClick={() => handleTenderClick("Tender 7")}
+            className={`action-button ${isCustomMessageMode ? "action-button-disabled" : ""
+              } ${selectedTender === "Tender 7" ? "action-button-selected" : ""}`}
+          >
+            TENDER 7
+          </button>
+          <button
+            key="tender8"
+            onClick={() => handleTenderClick("Tender 8")}
+            className={`action-button ${isCustomMessageMode ? "action-button-disabled" : ""
+              } ${selectedTender === "Tender 8" ? "action-button-selected" : ""}`}
+          >
+            TENDER 8
+          </button>
         </div>
       </div>
       <p>Select Action:</p>
@@ -370,12 +394,12 @@ function RadioOperatorDashboard() {
             ARRIVED
           </button>
           <button
-            key="departing"
-            onClick={() => handleActionClick("DEPARTING")}
+            key="departed"
+            onClick={() => handleActionClick("DEPARTED")}
             className={`action-button ${isCustomMessageMode ? "action-button-disabled" : ""
-              }  ${action === "DEPARTING" ? "action-button-selected" : ""}`}
+              }  ${action === "DEPARTED" ? "action-button-selected" : ""}`}
           >
-            DEPARTING
+            DEPARTED
           </button>
         </div>
       </div>
