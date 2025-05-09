@@ -12,6 +12,7 @@ import {
   query, // Used to build and configure database queries.
   orderBy, // Used in a query to order the documents by a specific field.
   onSnapshot, // Used to listen for real-time updates to a query.
+  limit, // Add this import
 } from "firebase/firestore";
 // Import the CSS file for styling this component.
 import "./RadioOperatorDashboard.css";
@@ -38,35 +39,25 @@ function RadioOperatorDashboard() {
 
   // useEffect hook to handle side effects like setting up Firebase authentication listener and fetching initial notifications.
   useEffect(() => {
-    // Create a reference to the 'guestNotifications' collection in the Firestore database.
     const notificationsColRef = collection(db, "guestNotifications");
-    // Create a query to fetch notifications ordered by the 'timestamp' field in descending order (newest first).
-    const q = query(notificationsColRef, orderBy("timestamp", "desc"));
-
-    // Set up a real-time listener for the 'guestNotifications' collection based on the query.
-    const unsubscribeNotifications = onSnapshot(
-      q,
-      (querySnapshot) => {
-        // When the snapshot updates (data changes), map over the documents to create an array of notification objects.
-        const notificationList = querySnapshot.docs.map((doc) => ({
-          id: doc.id, // Include the document ID in the notification object.
-          ...doc.data(), // Include all other data from the document.
-        }));
-        // Update the 'notifications' state with the new list of notifications.
-        setNotifications(notificationList);
-      },
-      (error) => {
-        // If an error occurs while listening for notifications, log it to the console.
-        console.error("Error listening for guest notifications: ", error);
-        // Optionally, you could set an error state here to display a message to the user.
-      }
+    // Add limit(10) to your query
+    const q = query(
+      notificationsColRef,
+      orderBy("timestamp", "desc"),
+      limit(10)
     );
 
-    // Return a cleanup function that will be executed when the component unmounts or before the effect runs again.
-    return () => {
-      // Unsubscribe from the real-time notifications listener.
-      unsubscribeNotifications();
-    };
+    const unsubscribeNotifications = onSnapshot(q, (querySnapshot) => {
+      const notificationList = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setNotifications(notificationList);
+    }, (error) => {
+      console.error("Error listening for guest notifications: ", error);
+    });
+
+    return () => unsubscribeNotifications();
   }, []); // The empty dependency array ensures this effect runs only once after the initial render.
 
   // Function to handle clicks on action buttons (ARRIVING, ARRIVED, DEPARTED).

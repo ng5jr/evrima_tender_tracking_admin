@@ -31,11 +31,6 @@
     font-size: 0.9em;
 }
 
-.signin-container div {
-
-    /* Space between sections */
-}
-
 .signin-container form {
     display: flex;
     flex-direction: column;
