@@ -11,6 +11,8 @@ import {
   isSignInWithEmailLink, // Import isSignInWithEmailLink (needed for completeEmailLinkSignIn)
   signInWithEmailLink, // Import signInWithEmailLink (needed for completeEmailLinkSignIn)
   onAuthStateChanged, // Keep this if used elsewhere or in context
+  createUserWithEmailAndPassword, // Add this import
+  signInWithEmailAndPassword, // Add this import
 } from "firebase/auth";
 
 // --- Your Firebase Config from .env ---
@@ -144,6 +146,63 @@ export const completeEmailLinkSignIn = async (url = window.location.href) => {
   }
 };
 
+// Email domain validation helper
+const validateRitzCarltonEmail = (email) => {
+  if (!email || typeof email !== "string" || !email.includes("@")) {
+    throw new Error("Invalid email format provided.");
+  }
+  if (!email.toLowerCase().endsWith(allowedDomain)) {
+    throw new Error(`Only ${allowedDomain} email addresses are allowed.`);
+  }
+  return true;
+};
+
+// Email/Password Sign Up (Domain Restricted)
+export const signUpWithEmailPassword = async (email, password) => {
+  try {
+    // Validate the email domain
+    validateRitzCarltonEmail(email);
+
+    // Create the user with email and password
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    return userCredential.user;
+  } catch (error) {
+    console.error("Error during email/password sign up:", error);
+
+    // Return more user-friendly error messages
+    if (error.code === "auth/email-already-in-use") {
+      throw new Error("This email is already registered. Please sign in instead.");
+    } else if (error.code === "auth/weak-password") {
+      throw new Error("Password is too weak. Please use at least 6 characters.");
+    }
+
+    throw error; // Re-throw other errors
+  }
+};
+
+// Email/Password Sign In (Domain Restricted)
+export const signInWithEmailPassword = async (email, password) => {
+  try {
+    // Validate the email domain
+    validateRitzCarltonEmail(email);
+
+    // Sign in with email and password
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    return userCredential.user;
+  } catch (error) {
+    console.error("Error during email/password sign in:", error);
+
+    // Return more user-friendly error messages
+    if (error.code === "auth/user-not-found" || error.code === "auth/wrong-password") {
+      throw new Error("Invalid email or password. Please try again.");
+    } else if (error.code === "auth/too-many-requests") {
+      throw new Error("Too many unsuccessful login attempts. Please try again later.");
+    }
+
+    throw error; // Re-throw other errors
+  }
+};
+
 // --- Export Core Services ---
 export {
   auth,
@@ -152,5 +211,8 @@ export {
   onAuthStateChanged,
   signInWithPopup,
   signOut,
+  // Include the new exports
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
 }; // Include all necessary exports
 // Note: We also exported handleGoogleSignIn, handleSignOut, sendEmailLink, completeEmailLinkSignIn above

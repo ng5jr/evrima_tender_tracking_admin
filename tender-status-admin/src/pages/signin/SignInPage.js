@@ -6,16 +6,22 @@ import { useAuth } from "../../contexts/AuthContext"; // Import the hook for aut
 import {
   handleGoogleSignIn,
   sendEmailLink,
+  signUpWithEmailPassword,
+  signInWithEmailPassword,
 } from "../../firebase/firebaseconfig"; // Import your Firebase interaction functions
 import "./SignInPage.css"; // Import your CSS styles
 import Logo from "../../components/logo";
 
 function SignInPage() {
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [loadingGoogle, setLoadingGoogle] = useState(false);
   const [loadingEmail, setLoadingEmail] = useState(false);
+  const [loadingEmailPassword, setLoadingEmailPassword] = useState(false);
+  const [isRegistering, setIsRegistering] = useState(false);
 
   const { currentUser, loading: authLoading } = useAuth(); // Get user and loading status from context
   const navigate = useNavigate();
@@ -70,6 +76,46 @@ function SignInPage() {
     }
   };
 
+  // Handler for Email/Password Sign-In or Sign-Up
+  const handleEmailPasswordAuth = async (event) => {
+    event.preventDefault();
+    setError("");
+    setMessage("");
+    setLoadingEmailPassword(true);
+
+    try {
+      if (isRegistering) {
+        // Registration mode
+        if (password !== confirmPassword) {
+          throw new Error("Passwords do not match.");
+        }
+
+        if (password.length < 6) {
+          throw new Error("Password must be at least 6 characters long.");
+        }
+
+        await signUpWithEmailPassword(email, password);
+        setMessage("Account created successfully! You can now sign in.");
+        setIsRegistering(false);
+      } else {
+        // Login mode
+        await signInWithEmailPassword(email, password);
+        // Successful login will trigger redirect via useEffect
+      }
+    } catch (err) {
+      setError(err.message || "Authentication failed. Please try again.");
+    } finally {
+      setLoadingEmailPassword(false);
+    }
+  };
+
+  // Toggle between sign-in and registration
+  const toggleMode = () => {
+    setIsRegistering(!isRegistering);
+    setError("");
+    setMessage("");
+  };
+
   // Don't render the sign-in form if auth is still loading or if user exists (before redirect effect kicks in)
   if (authLoading || currentUser) {
     return <div>Loading...</div>; // Or a spinner
@@ -80,8 +126,73 @@ function SignInPage() {
     <div className="signin-container">
       <Logo /> {/* Logo component */}
       <h2>TENDER STATUS - SIGN IN</h2>
-      {message && <p className="success-message">{message}</p>}{" "}
-      <div>
+      {message && <p className="success-message">{message}</p>}
+
+      {/* Email/Password Authentication Form */}
+      <div className="auth-section">
+        <h3>{isRegistering ? "Create Account" : "Sign In with Email"}</h3>
+        <form className="sign-form" onSubmit={handleEmailPasswordAuth}>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="your.name@ritz-carltonyachtcollection.com"
+            required
+            disabled={loadingEmailPassword}
+            autocomplete="off"
+          />
+
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Password"
+            required
+            disabled={loadingEmailPassword}
+            autocomplete="off"
+          />
+
+          {isRegistering && (
+            <input
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="Confirm Password"
+              required
+              disabled={loadingEmailPassword}
+            />
+          )}
+
+          <small>
+            For users with <b>@ritz-carltonyachtcollection.com</b> emails
+          </small>
+
+          <button type="submit" disabled={loadingEmailPassword}>
+            {loadingEmailPassword
+              ? "Processing..."
+              : isRegistering
+                ? "Create Account"
+                : "Sign In"}
+          </button>
+        </form>
+
+        <div className="mode-toggle">
+          <button
+            onClick={toggleMode}
+            className="text-button"
+          >
+            {isRegistering
+              ? "Already have an account? Sign In"
+              : "Need an account? Register"}
+          </button>
+        </div>
+      </div>
+
+      <div className="divider">OR</div>
+
+      {/* Email Link Authentication */}
+      {/* <div className="auth-section">
+        <h3>Sign In with Email Link</h3>
         <form onSubmit={sendEmailLinkHandler}>
           <input
             type="email"
@@ -93,7 +204,7 @@ function SignInPage() {
           />
 
           <small>
-            For users with <b> @ritz-carltonyachtcollection.com </b> emails
+            For users with <b>@ritz-carltonyachtcollection.com</b> emails
           </small>
 
           <button type="submit" disabled={loadingEmail}>
@@ -103,10 +214,12 @@ function SignInPage() {
         <p>
           <small>Click the link sent to your email to complete sign-in.</small>
         </p>
-        {error && <p className="error-message">{error}</p>} {/* Style errors */}
-      </div>
-      <div className="divider">OR</div>
-      <div>
+      </div> */}
+
+      {/* <div className="divider">OR</div> */}
+
+      {/* Google Authentication */}
+      <div className="auth-section">
         <button onClick={googleSignInHandler} disabled={loadingGoogle}>
           {loadingGoogle ? "Signing In..." : "Sign In with Google"}
         </button>
@@ -114,6 +227,8 @@ function SignInPage() {
           <small>Use the designated admin Gmail account.</small>
         </p>
       </div>
+
+      {error && <p className="error-message">{error}</p>}
     </div>
   );
 }
