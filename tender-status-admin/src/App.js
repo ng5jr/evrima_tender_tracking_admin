@@ -39,7 +39,7 @@ function App() {
           }
         />
         <Route
-          path="/operator/tv"
+          path="/tv"
           element={
             <ProtectedRoute>
               {" "}
