@@ -347,30 +347,7 @@ function RadioOperatorDashboard() {
           >
             TENDER 5
           </button>
-          <button
-            key="tender6"
-            onClick={() => handleTenderClick("Tender 6")}
-            className={`action-button ${isCustomMessageMode ? "action-button-disabled" : ""
-              } ${selectedTender === "Tender 6" ? "action-button-selected" : ""}`}
-          >
-            TENDER 6
-          </button>
-          <button
-            key="tender7"
-            onClick={() => handleTenderClick("Tender 7")}
-            className={`action-button ${isCustomMessageMode ? "action-button-disabled" : ""
-              } ${selectedTender === "Tender 7" ? "action-button-selected" : ""}`}
-          >
-            TENDER 7
-          </button>
-          <button
-            key="tender8"
-            onClick={() => handleTenderClick("Tender 8")}
-            className={`action-button ${isCustomMessageMode ? "action-button-disabled" : ""
-              } ${selectedTender === "Tender 8" ? "action-button-selected" : ""}`}
-          >
-            TENDER 8
-          </button>
+
         </div>
       </div>
       <p>Select Action:</p>

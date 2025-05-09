@@ -4,6 +4,7 @@ import RadioOperatorDashboard from "./pages/operator dashboard/RadioOperatorDash
 import FeedbackAnalytics from "./pages/analytics/feedbackanalytics";
 import SignInPage from "./pages/signin/SignInPage"; // ** You'll need to create this page **
 import EmailLinkLanding from "./pages/EmailLinkLanding"; // ** You'll need to create this page **
+import AdminTV from "./pages/operator dashboard/admintv/admintv";
 // Import routing components
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
@@ -34,6 +35,16 @@ function App() {
               {" "}
               {/* Wrap with ProtectedRoute */}
               <RadioOperatorDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/operator/tv"
+          element={
+            <ProtectedRoute>
+              {" "}
+              {/* Wrap with ProtectedRoute */}
+              <AdminTV />
             </ProtectedRoute>
           }
         />
