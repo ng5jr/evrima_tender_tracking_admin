@@ -13,6 +13,7 @@ import {
   onAuthStateChanged, // Keep this if used elsewhere or in context
   createUserWithEmailAndPassword, // Add this import
   signInWithEmailAndPassword, // Add this import
+  sendPasswordResetEmail, // Add this import
 } from "firebase/auth";
 
 // --- Your Firebase Config from .env ---
@@ -200,6 +201,26 @@ export const signInWithEmailPassword = async (email, password) => {
     }
 
     throw error; // Re-throw other errors
+  }
+};
+
+// Add this new function for password reset
+export const resetPassword = async (email) => {
+  try {
+    // Validate the email domain
+    validateRitzCarltonEmail(email);
+
+    // Send password reset email
+    await sendPasswordResetEmail(auth, email);
+    return true;
+  } catch (error) {
+    console.error("Error sending password reset email:", error);
+
+    if (error.code === "auth/user-not-found") {
+      throw new Error("No account exists with this email address.");
+    }
+
+    throw error;
   }
 };
 

@@ -8,6 +8,7 @@ import {
   sendEmailLink,
   signUpWithEmailPassword,
   signInWithEmailPassword,
+  resetPassword, // Add this import
 } from "../../firebase/firebaseconfig"; // Import your Firebase interaction functions
 import "./SignInPage.css"; // Import your CSS styles
 import Logo from "../../components/logo";
@@ -22,6 +23,7 @@ function SignInPage() {
   const [loadingEmail, setLoadingEmail] = useState(false);
   const [loadingEmailPassword, setLoadingEmailPassword] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
+  const [loadingReset, setLoadingReset] = useState(false); // Add this state
 
   const { currentUser, loading: authLoading } = useAuth(); // Get user and loading status from context
   const navigate = useNavigate();
@@ -109,6 +111,35 @@ function SignInPage() {
     }
   };
 
+  // Add handler for password reset
+  const handlePasswordReset = async () => {
+    // Validate there's an email to send reset to
+    if (!email) {
+      setError("Please enter your email address first.");
+      return;
+    }
+
+    setError("");
+    setMessage("");
+    setLoadingReset(true);
+
+    try {
+      if (window.confirm("Are you sure you want to reset your password?")) {
+        // Proceed with password reset
+        await resetPassword(email);
+        setMessage("Password reset email sent. Please check your inbox.");
+      } else {
+        // User canceled the reset
+        setError("Password reset canceled.");
+      }
+
+    } catch (err) {
+      setError(err.message || "Failed to send reset email. Please try again.");
+    } finally {
+      setLoadingReset(false);
+    }
+  };
+
   // Toggle between sign-in and registration
   const toggleMode = () => {
     setIsRegistering(!isRegistering);
@@ -138,8 +169,8 @@ function SignInPage() {
             onChange={(e) => setEmail(e.target.value)}
             placeholder="your.name@ritz-carltonyachtcollection.com"
             required
-            disabled={loadingEmailPassword}
-            autocomplete="off"
+            disabled={loadingEmailPassword || loadingReset}
+            autoComplete="off"
           />
 
           <input
@@ -148,8 +179,8 @@ function SignInPage() {
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Password"
             required
-            disabled={loadingEmailPassword}
-            autocomplete="off"
+            disabled={loadingEmailPassword || loadingReset}
+            autoComplete="off"
           />
 
           {isRegistering && (
@@ -163,17 +194,34 @@ function SignInPage() {
             />
           )}
 
+          {/* Add Forgot Password link (only show when not registering) */}
+          <div className="forgot-password">
+            <button type="submit" disabled={loadingEmailPassword}>
+              {loadingEmailPassword
+                ? "Processing..."
+                : isRegistering
+                  ? "Create Account"
+                  : "Sign In"}
+            </button>
+            {!isRegistering && (
+
+              <button
+                type="button"
+                onClick={handlePasswordReset}
+                className="text-button"
+                disabled={loadingReset || loadingEmailPassword}
+              >
+                {loadingReset ? "Sending..." : "Forgot Password?"}
+              </button>
+
+            )}
+
+          </div>
           <small>
             For users with <b>@ritz-carltonyachtcollection.com</b> emails
           </small>
 
-          <button type="submit" disabled={loadingEmailPassword}>
-            {loadingEmailPassword
-              ? "Processing..."
-              : isRegistering
-                ? "Create Account"
-                : "Sign In"}
-          </button>
+
         </form>
 
         <div className="mode-toggle">
