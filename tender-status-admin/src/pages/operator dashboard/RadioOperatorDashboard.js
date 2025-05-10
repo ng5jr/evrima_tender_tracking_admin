@@ -186,17 +186,11 @@ function RadioOperatorDashboard() {
 
   // Asynchronous function to handle deleting a specific notification.
   const handleDeleteNotification = async (id) => {
-    // Check if the user is logged in and confirm the deletion with the user.
     if (window.confirm("Are you sure you want to delete this notification?")) {
       try {
-        // Delete the document with the given ID from the 'guestNotifications' collection.
+        // Just delete from Firestore and let onSnapshot handle the state update
         await deleteDoc(doc(db, "guestNotifications", id));
-        // Update the local 'notifications' state by filtering out the deleted notification.
-        setNotifications(
-          notifications.filter((notification) => notification.id !== id)
-        );
       } catch (err) {
-        // If an error occurs during deletion, log it and display an alert.
         console.error("Error deleting notification:", err);
         alert("Failed to delete notification.");
       }
