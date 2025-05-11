@@ -332,6 +332,10 @@ textarea,
   justify-content: center;
 }
 
+.sign img {
+  width: 30px;
+}
+
 .sign svg {
   width: 17px;
 }
@@ -354,4 +358,239 @@ textarea,
 .btn-signout {
 
   background: linear-gradient(0deg, rgb(167, 20, 20) 0%, rgb(247, 102, 102) 100%);
+}
+
+/* Port Day Management Section */
+.port-day-management {
+  background-color: #181818;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 16px 12px 12px 12px;
+
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.create {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.port-day-management input[type="text"] {
+  width: 67%;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid #444;
+  background-color: #222;
+  color: #fff;
+  font-size: 1em;
+  flex: 1;
+}
+
+.port-day-management input[type="datetime-local"] {
+  background: #212223;
+  color: #fff;
+  border: 1.5px solid #444;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 1em;
+  width: 20px;
+
+  transition: border 0.2s, box-shadow 0.2s;
+  box-shadow: 0 2px 8px #1e2a4b22;
+  flex: 0.5;
+}
+
+.port-day-management input[type="datetime-local"]:focus {
+  outline: none;
+  border: 1.5px solid #367AF6;
+  box-shadow: 0 0 0 2px #4B91F755;
+}
+
+@media (max-width: 600px) {
+  .port-day-management input[type="datetime-local"] {
+    font-size: 0.95em;
+    min-width: 120px;
+    padding: 7px 8px;
+  }
+}
+
+.port-day-management button {
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: none;
+  background: linear-gradient(180deg, #4B91F7 0%, #367AF6 100%);
+  color: #fff;
+  font-weight: 500;
+  font-size: 1em;
+  cursor: pointer;
+
+  margin-left: 0;
+  margin-right: 0;
+  transition: background 0.2s;
+}
+
+.port-day-management button:active {
+  background: linear-gradient(180deg, #367AF6 0%, #4B91F7 100%);
+}
+
+.port-day-management button:disabled {
+  background: #444 !important;
+  color: #aaa !important;
+  cursor: not-allowed !important;
+  border: none !important;
+  opacity: 0.7;
+}
+
+.port-day-management ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.port-day-management li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #232323;
+  border-radius: 5px;
+  padding: 7px 10px;
+  font-size: 0.95em;
+  color: #fff;
+  border: 1px solid #292929;
+  transition: background 0.2s, opacity 0.2s;
+}
+
+
+.port-day-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.set-active-portday-btn {
+  background: linear-gradient(180deg, #37932d 0%, #276d19 100%);
+  border: 1px solid #20800d;
+  color: #fff;
+  font-size: 0.95em;
+  padding: 5px 12px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.set-active-portday-btn:active {
+  background: linear-gradient(180deg, #276d19 0%, #37932d 100%);
+}
+
+.delete-portday-btn {
+  background: linear-gradient(180deg, #f74b4b 0%, #f63636 100%);
+  border: 1px solid red;
+  border: none;
+  color: #fff;
+  border-radius: 5px;
+  padding: 5px 10px;
+  margin-left: 6px;
+  cursor: pointer;
+  font-size: 0.9em;
+  transition: background 0.2s;
+}
+
+.delete-portday-btn:active {
+  background: linear-gradient(180deg, #d32f2f 0%, #f74b4b 100%);
+}
+
+.active-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.active-dot {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #4BFF91 0%, #1FC46C 100%);
+  border: 1.5px solid #1FC46C;
+  box-shadow: 0 0 4px #1FC46C;
+}
+
+.active-label {
+  color: #4B91F7;
+  font-weight: 600;
+}
+
+.port-day-management li button {
+  background: linear-gradient(180deg, #37932d 0%, #276d19 100%);
+  border: 1px solid #20800d;
+  color: #fff;
+  font-size: 0.95em;
+  padding: 5px 12px;
+  border-radius: 5px;
+
+}
+
+.port-day-management li .delete-portday-btn {
+  background: linear-gradient(180deg, #ff0000 0%, #6d1919 100%);
+  border: 1px solid rgb(63, 16, 16);
+  color: #fff;
+  font-size: 0.95em;
+  padding: 5px 12px;
+  border-radius: 5px;
+
+}
+
+.modal-overlay {
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+  background: rgba(10, 18, 40, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-content {
+  background: #181f2a;
+  border-radius: 10px;
+  padding: 32px 24px 24px 24px;
+  min-width: 320px;
+  max-width: 95vw;
+  box-shadow: 0 8px 32px #000a;
+  position: relative;
+  color: #fff;
+}
+
+.modal-content h3 {
+  font-size: 1.3em;
+  margin: 0 0 16px 0;
+  color: #fff;
+  font-weight: 400;
+}
+
+.modal-close-btn {
+  position: absolute;
+  top: 12px;
+  right: 18px;
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 2rem;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0;
+  transition: color 0.2s;
+}
+
+.modal-close-btn:hover {
+  color: #4B91F7;
 }

@@ -13,12 +13,18 @@ import {
   orderBy, // Used in a query to order the documents by a specific field.
   onSnapshot, // Used to listen for real-time updates to a query.
   limit, // Add this import
+  setDoc,
+  updateDoc,
+  getDoc,
+  writeBatch,
 } from "firebase/firestore";
 // Import the CSS file for styling this component.
 import "./RadioOperatorDashboard.css";
 // Import the Logo component, presumably for displaying a logo.
 import Logo from "../../components/logo";
+
 import { Link } from "react-router-dom";
+import SettingsIcon from "../../assets/settings.png";
 
 // Define the main functional component for the Radio Operator Dashboard.
 function RadioOperatorDashboard() {
@@ -36,6 +42,10 @@ function RadioOperatorDashboard() {
   const [notifications, setNotifications] = useState([]);
   // Add a new state variable to track the selected tender
   const [selectedTender, setSelectedTender] = useState("");
+  const [newPortDay, setNewPortDay] = useState({ name: "" }); // Remove startDate from state
+  const [portDays, setPortDays] = useState([]);
+  const [activePortDay, setActivePortDay] = useState(null);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
 
   // useEffect hook to handle side effects like setting up Firebase authentication listener and fetching initial notifications.
   useEffect(() => {
@@ -59,6 +69,38 @@ function RadioOperatorDashboard() {
 
     return () => unsubscribeNotifications();
   }, []); // The empty dependency array ensures this effect runs only once after the initial render.
+
+  // Fetch port days and set only the active one in UI
+  useEffect(() => {
+    const fetchPortDays = async () => {
+      const snapshot = await getDocs(collection(db, "portDays"));
+      const allPortDays = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      // Only one can be active: if more than one, pick the most recent by startDate
+      const actives = allPortDays.filter(pd => pd.isActive);
+      let active = null;
+      if (actives.length > 1) {
+        // Deactivate all but the most recent
+        const sorted = actives
+          .map(pd => ({
+            ...pd,
+            startDate: pd.startDate?.seconds
+              ? new Date(pd.startDate.seconds * 1000)
+              : new Date(pd.startDate),
+          }))
+          .sort((a, b) => b.startDate - a.startDate);
+        active = sorted[0];
+        // Deactivate others in DB
+        for (let i = 1; i < sorted.length; i++) {
+          await updateDoc(doc(db, "portDays", sorted[i].id), { isActive: false });
+        }
+      } else {
+        active = actives[0] || null;
+      }
+      setActivePortDay(active || null);
+      setPortDays(allPortDays);
+    };
+    fetchPortDays();
+  }, []);
 
   // Function to handle clicks on action buttons (ARRIVING, ARRIVED, DEPARTED).
   const handleActionClick = (selectedAction) => {
@@ -159,13 +201,14 @@ function RadioOperatorDashboard() {
         }
       }
 
-      if (formattedMessage) {
+      if (formattedMessage && activePortDay?.id) {
         await addDoc(collection(db, "guestNotifications"), {
           message: formattedMessage,
           action: action,
           direction: direction,
           tender: selectedTender, // Store the tender information
           timestamp: serverTimestamp(),
+          portDayId: activePortDay.id, // <-- associate with port day
         });
 
         setAction("");
@@ -223,6 +266,52 @@ function RadioOperatorDashboard() {
     }
   };
 
+  // Create new port day, set as active, and update UI (deactivate all others in DB)
+  const handleCreatePortDay = async () => {
+    if (!newPortDay.name) return;
+
+    // Confirmation dialog requiring user to type 'PORT'
+    const confirmation = window.prompt(
+      "To confirm creation of a new port day, please type PORT and press OK."
+    );
+    if (confirmation !== "PORT") {
+      alert("Port day creation cancelled. You must type PORT to confirm.");
+      return;
+    }
+
+    // Deactivate all port days in DB
+    const snapshot = await getDocs(collection(db, "portDays"));
+    const batch = writeBatch(db);
+    snapshot.docs.forEach(docSnap => {
+      batch.update(doc(db, "portDays", docSnap.id), { isActive: false });
+    });
+
+    // Use current date/time for startDate
+    const now = new Date();
+    const docRef = await addDoc(collection(db, "portDays"), {
+      name: newPortDay.name,
+      isActive: true,
+      startDate: now,
+    });
+    await batch.commit();
+
+    setActivePortDay({
+      id: docRef.id,
+      name: newPortDay.name,
+      isActive: true,
+      startDate: now,
+    });
+    setNewPortDay({ name: "" });
+  };
+
+  // Delete the active port day from UI AND from DB
+  const handleDeleteActivePortDayFromUI = async () => {
+    if (activePortDay && window.confirm("Are you sure you want to delete this port day?")) {
+      await deleteDoc(doc(db, "portDays", activePortDay.id));
+      setActivePortDay(null);
+    }
+  };
+
   // Function to handle toggling the custom message mode.
   const handleCustomMessageButtonClick = () => {
     setIsCustomMessageMode(!isCustomMessageMode);
@@ -260,34 +349,72 @@ function RadioOperatorDashboard() {
           </svg>
         </div>
       </button>
-      <Link
-        to="/analytics"
+
+      {/* Settings Button */}
+      <button
         className="Btn analytics-button"
-        aria-label="View Analytics"
+        onClick={() => setShowSettingsModal(true)}
+        type="button"
       >
         <div className="sign">
-          <svg
-            fill="#000000"
-            height="800px"
-            width="800px"
-            version="1.1"
-            id="Layer_1"
-            viewBox="0 0 512.011 512.011"
-          >
-            <g>
-              <g>
-                <g>
-                  <path d="M192,64.005c-58.907,0-106.667,47.759-106.667,106.667S133.093,277.339,192,277.339s106.667-47.759,106.667-106.667     S250.907,64.005,192,64.005z M239.54,127.834c0.241,0.267,0.47,0.545,0.707,0.816c0.494,0.567,0.984,1.137,1.458,1.721     c0.268,0.33,0.526,0.667,0.787,1.002c0.425,0.546,0.845,1.096,1.253,1.656c0.262,0.359,0.518,0.721,0.772,1.086     c0.391,0.561,0.772,1.129,1.146,1.703c0.24,0.368,0.479,0.737,0.712,1.11c0.377,0.606,0.739,1.222,1.095,1.841     c0.203,0.352,0.411,0.701,0.608,1.057c0.405,0.735,0.789,1.483,1.166,2.235c0.125,0.25,0.261,0.495,0.383,0.747     c0.489,1.009,0.952,2.032,1.388,3.069c0.105,0.249,0.196,0.505,0.298,0.756c0.322,0.794,0.635,1.592,0.926,2.401     c0.036,0.101,0.067,0.203,0.103,0.304h-39.01v-39.01c0.101,0.036,0.203,0.067,0.304,0.103c0.809,0.291,1.608,0.604,2.402,0.927     c0.251,0.102,0.507,0.193,0.756,0.298c1.037,0.436,2.061,0.9,3.07,1.388c0.251,0.122,0.495,0.256,0.744,0.381     c0.753,0.377,1.502,0.762,2.238,1.168c0.356,0.196,0.705,0.405,1.057,0.608c0.619,0.357,1.235,0.719,1.841,1.095     c0.373,0.232,0.741,0.472,1.11,0.711c0.574,0.374,1.143,0.755,1.704,1.147c0.364,0.254,0.726,0.51,1.084,0.771     c0.561,0.409,1.112,0.829,1.659,1.255c0.334,0.261,0.671,0.519,1,0.786c0.585,0.475,1.156,0.965,1.723,1.459     c0.271,0.236,0.548,0.465,0.815,0.706C236.485,124.617,238.055,126.187,239.54,127.834z M192,234.672c-35.343,0-64-28.657-64-64     c0-27.861,17.813-51.555,42.667-60.343v60.343c0,11.782,9.551,21.333,21.333,21.333h60.343     C243.555,216.859,219.861,234.672,192,234.672z" />
-                  <path d="M405.333,85.339h-64c-11.782,0-21.333,9.551-21.333,21.333c0,11.782,9.551,21.333,21.333,21.333h64     c11.782,0,21.333-9.551,21.333-21.333C426.667,94.89,417.115,85.339,405.333,85.339z" />
-                  <path d="M405.333,213.339H320c-11.782,0-21.333,9.551-21.333,21.333c0,11.782,9.551,21.333,21.333,21.333h85.333     c11.782,0,21.333-9.551,21.333-21.333C426.667,222.89,417.115,213.339,405.333,213.339z" />
-                  <path d="M405.333,149.339h-42.667c-11.782,0-21.333,9.551-21.333,21.333c0,11.782,9.551,21.333,21.333,21.333h42.667     c11.782,0,21.333-9.551,21.333-21.333C426.667,158.89,417.115,149.339,405.333,149.339z" />
-                  <path d="M512,319.794V59.547c0-32.881-26.661-59.541-59.541-59.541H59.541C26.661,0.005,0,26.666,0,59.547v260.459     c0,0.071,0.01,0.14,0.011,0.211v46.914c0,32.881,26.64,59.541,59.52,59.541h105.146l-10.667,42.667h-4.677     c-11.782,0-21.333,9.551-21.333,21.333s9.551,21.333,21.333,21.333h21.333h170.667h21.333c11.782,0,21.333-9.551,21.333-21.333     s-9.551-21.333-21.333-21.333h-4.677l-10.667-42.667h105.146c32.881,0,59.541-26.661,59.541-59.541v-47.125     C512.011,319.934,512.001,319.865,512,319.794z M42.667,59.547c0-9.317,7.558-16.875,16.875-16.875h392.917     c9.317,0,16.875,7.558,16.875,16.875v239.125H42.667V59.547z M314.01,469.339H197.99l10.667-42.667h94.687L314.01,469.339z      M469.344,367.131c0,9.317-7.558,16.875-16.875,16.875H320H192H59.531c-9.309,0-16.853-7.55-16.853-16.875v-25.792h426.667     V367.131z" />
-                </g>
-              </g>
-            </g>
-          </svg>
+          <img src={SettingsIcon} alt="Settings" />
         </div>
-      </Link>
+      </button>
+
+      {/* Settings Modal */}
+      {showSettingsModal && (
+        <div className="modal-overlay" onClick={() => setShowSettingsModal(false)}>
+          <div
+            className="modal-content"
+            onClick={e => e.stopPropagation()}
+          >
+            <button
+              className="modal-close-btn"
+              onClick={() => setShowSettingsModal(false)}
+              title="Close"
+            >
+              ×
+            </button>
+            <h3>Port Day Management</h3>
+            <div className="port-day-management">
+              <div className="create">
+                <input
+                  type="text"
+                  placeholder="Port Day Name"
+                  value={newPortDay.name}
+                  onChange={e => setNewPortDay({ name: e.target.value })}
+                />
+                <button
+                  onClick={handleCreatePortDay}
+                  disabled={!newPortDay.name || newPortDay.name.trim() === ""}
+                >
+                  Create
+                </button>
+              </div>
+              <ul>
+                {activePortDay ? (
+                  <li className="active">
+                    <span>
+                      {activePortDay.name}
+                      {activePortDay.startDate && (
+                        <span style={{ marginLeft: 10, color: "#aaa", fontSize: "0.9em" }}>
+                          {new Date(activePortDay.startDate.seconds
+                            ? activePortDay.startDate.seconds * 1000
+                            : activePortDay.startDate
+                          ).toLocaleString("en-GB", { year: "numeric", month: "2-digit", day: "2-digit" })}
+                        </span>
+                      )}
+                    </span>
+                  </li>
+                ) : (
+                  <li style={{ opacity: 0.6, color: "#aaa" }}>No active port day</li>
+                )}
+              </ul>
+            </div>
+          </div>
+        </div>
+      )}
+
       <h2>TENDER STATUS</h2>
       <p>Select Tender:</p>
       <div>
@@ -426,12 +553,12 @@ function RadioOperatorDashboard() {
         >
           Send Notification
         </button>
-        <button
+        {/* <button
           onClick={handleClearNotifications}
           className="clear-notifications-button"
         >
           Clear All Notifications
-        </button>
+        </button> */}
       </div>
       <p>Guest Notifications</p>
       {notifications.length > 0 ? (
