@@ -1,85 +1,83 @@
-import React, { useState, useEffect } from "react";
-// Import the Firebase configuration object containing database and authentication instances.
+import React, { useState, useEffect, useRef } from "react";
 import { db, handleSignOut } from "../../firebase/firebaseconfig";
-// Import specific functions from the Firebase Firestore library.
 import {
-  collection, // Used to create a reference to a collection in the database.
-  addDoc, // Used to add a new document to a collection.
-  getDocs, // Used to retrieve multiple documents from a collection.
-  deleteDoc, // Used to delete a specific document from a collection.
-  doc, // Used to create a reference to a specific document by its ID.
-  serverTimestamp, // Used to generate a timestamp on the Firebase server.
-  query, // Used to build and configure database queries.
-  orderBy, // Used in a query to order the documents by a specific field.
-  onSnapshot, // Used to listen for real-time updates to a query.
-  limit, // Add this import
-  setDoc,
+  collection,
+  addDoc,
+  getDocs,
+  deleteDoc,
+  doc,
+  serverTimestamp,
+  query,
+  orderBy,
+  onSnapshot,
   updateDoc,
-  getDoc,
   writeBatch,
+  limit
 } from "firebase/firestore";
-// Import the CSS file for styling this component.
 import "./RadioOperatorDashboard.css";
-// Import the Logo component, presumably for displaying a logo.
 import Logo from "../../components/logo";
-
-import { Link } from "react-router-dom";
+import Location from "../../assets/location.png";
+import Clock from "../../assets/clock.png";
 import SettingsIcon from "../../assets/settings.png";
+import PierLocationMap from "../../components/PierLocationMap";
 
-// Define the main functional component for the Radio Operator Dashboard.
 function RadioOperatorDashboard() {
-  // State variable to store the selected action (e.g., 'ARRIVING', 'ARRIVED', 'DEPARTED').
+  // Notification and tender state
   const [action, setAction] = useState("");
-  // State variable to store the selected direction or location (e.g., 'SHORESIDE', 'SHIPSIDE').
   const [direction, setDirection] = useState("");
-  // State variable to display a preview of the notification message based on the selected action and direction.
   const [previewMessage, setPreviewMessage] = useState("");
-  // State variable to store the text of a custom notification message entered by the user.
   const [customMessage, setCustomMessage] = useState("");
-  // State variable to track whether the user is in custom message mode.
   const [isCustomMessageMode, setIsCustomMessageMode] = useState(false);
-  // State variable to store an array of guest notifications fetched from Firebase.
   const [notifications, setNotifications] = useState([]);
-  // Add a new state variable to track the selected tender
   const [selectedTender, setSelectedTender] = useState("");
-  const [newPortDay, setNewPortDay] = useState({ name: "" }); // Remove startDate from state
-  const [portDays, setPortDays] = useState([]);
+
+  // Port day state
   const [activePortDay, setActivePortDay] = useState(null);
+  const [portDays, setPortDays] = useState([]);
+  const [isConfigLoading, setIsConfigLoading] = useState(true); // <-- Add loading state
+
+  // Configuration diagram state
+  const [isCreatingConfig, setIsCreatingConfig] = useState(false);
+  const [isEditingConfig, setIsEditingConfig] = useState(false);
+  const [configData, setConfigData] = useState({
+    name: "",
+    avgTime: "",
+    pierLocation: null,
+  });
+  const [showMap, setShowMap] = useState(false);
+
+  // Settings modal (only for settings, not port day management)
   const [showSettingsModal, setShowSettingsModal] = useState(false);
 
-  // useEffect hook to handle side effects like setting up Firebase authentication listener and fetching initial notifications.
+  const portNameRef = useRef(null);
+
+  // Fetch notifications
   useEffect(() => {
     const notificationsColRef = collection(db, "guestNotifications");
-    // Add limit(10) to your query
     const q = query(
       notificationsColRef,
       orderBy("timestamp", "desc"),
-      limit(10)
+      limit(10) // <-- Limit to 10 notifications
     );
-
     const unsubscribeNotifications = onSnapshot(q, (querySnapshot) => {
       const notificationList = querySnapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }));
       setNotifications(notificationList);
-    }, (error) => {
-      console.error("Error listening for guest notifications: ", error);
     });
-
     return () => unsubscribeNotifications();
-  }, []); // The empty dependency array ensures this effect runs only once after the initial render.
+  }, []);
 
   // Fetch port days and set only the active one in UI
   useEffect(() => {
     const fetchPortDays = async () => {
+      setIsConfigLoading(true); // <-- Start loading
       const snapshot = await getDocs(collection(db, "portDays"));
       const allPortDays = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      // Only one can be active: if more than one, pick the most recent by startDate
       const actives = allPortDays.filter(pd => pd.isActive);
       let active = null;
       if (actives.length > 1) {
-        // Deactivate all but the most recent
         const sorted = actives
           .map(pd => ({
             ...pd,
@@ -89,7 +87,6 @@ function RadioOperatorDashboard() {
           }))
           .sort((a, b) => b.startDate - a.startDate);
         active = sorted[0];
-        // Deactivate others in DB
         for (let i = 1; i < sorted.length; i++) {
           await updateDoc(doc(db, "portDays", sorted[i].id), { isActive: false });
         }
@@ -98,63 +95,23 @@ function RadioOperatorDashboard() {
       }
       setActivePortDay(active || null);
       setPortDays(allPortDays);
+      setIsConfigLoading(false); // <-- End loading
     };
     fetchPortDays();
   }, []);
 
-  // Function to handle clicks on action buttons (ARRIVING, ARRIVED, DEPARTED).
-  const handleActionClick = (selectedAction) => {
-    // Only update the action if not in custom message mode.
-    if (!isCustomMessageMode) {
-      // Update the 'action' state with the selected action.
-      setAction(selectedAction);
-      // Update the preview message based on the new action and the current direction.
-      updatePreview(selectedAction, direction);
-    }
-  };
-
-  // Function to handle clicks on direction buttons (SHORESIDE, SHIPSIDE).
-  const handleDirectionClick = (selectedDirection) => {
-    // Only update the direction if not in custom message mode.
-    if (!isCustomMessageMode) {
-      // Update the 'direction' state with the selected direction.
-      setDirection(selectedDirection);
-      // Update the preview message based on the current action and the new direction.
-      updatePreview(action, selectedDirection);
-    }
-  };
-
-  // Function to handle clicks on tender buttons
-  const handleTenderClick = (tenderNumber) => {
-    // Only update the tender if not in custom message mode
-    if (!isCustomMessageMode) {
-      setSelectedTender(tenderNumber);
-      // Update the preview message with the new tender selection
-      updatePreview(action, direction, tenderNumber);
-    }
-  };
-
-  // Function to update the preview message based on the selected action and direction.
+  // Notification preview logic
   const updatePreview = (currentAction, currentDirection, currentTender = selectedTender) => {
-    // Check if both an action and a direction have been selected
     if (currentAction && currentDirection) {
       let locationText = currentDirection;
-
-      if (currentDirection === "SHORESIDE") {
-        locationText = "the pier";
-      } else if (currentDirection === "SHIPSIDE") {
-        locationText = "Evrima";
-      }
-
+      if (currentDirection === "SHORESIDE") locationText = "the pier";
+      else if (currentDirection === "SHIPSIDE") locationText = "Evrima";
       let preview = "";
       const tenderPrefix = currentTender ? `${currentTender} ` : "A tender ";
-
       if (currentAction === "ARRIVING") {
-        preview = `${tenderPrefix}is arriving ${currentDirection === "SHIPSIDE" ? "" : "at"
-          } ${locationText} in less than 5 minutes.`;
+        preview = `${tenderPrefix}is arriving ${currentDirection === "SHIPSIDE" ? "" : "at"} ${locationText} in less than 5 minutes.`;
       } else if (currentAction === "ARRIVED") {
-        preview = `${tenderPrefix}has arrived ${currentDirection === "SHIPSIDE" ? "" : "at"
-          } ${locationText}.`;
+        preview = `${tenderPrefix}has arrived ${currentDirection === "SHIPSIDE" ? "" : "at"} ${locationText}.`;
       } else if (currentAction === "DEPARTED") {
         preview = `${tenderPrefix}has departed from ${locationText}.`;
       } else {
@@ -166,7 +123,27 @@ function RadioOperatorDashboard() {
     }
   };
 
-  // Asynchronous function to handle sending a new notification to Firebase.
+  // Notification actions
+  const handleActionClick = (selectedAction) => {
+    if (!isCustomMessageMode) {
+      setAction(selectedAction);
+      updatePreview(selectedAction, direction);
+    }
+  };
+  const handleDirectionClick = (selectedDirection) => {
+    if (!isCustomMessageMode) {
+      setDirection(selectedDirection);
+      updatePreview(action, selectedDirection);
+    }
+  };
+  const handleTenderClick = (tenderNumber) => {
+    if (!isCustomMessageMode) {
+      setSelectedTender(tenderNumber);
+      updatePreview(action, direction, tenderNumber);
+    }
+  };
+
+  // Send notification
   const handleSendNotification = async () => {
     try {
       let formattedMessage = "";
@@ -178,7 +155,6 @@ function RadioOperatorDashboard() {
         let arrivalLocation = locationText;
         let departurePreposition = "from";
         let departureLocation = locationText;
-
         if (direction === "SHORESIDE") {
           arrivalLocation = "the pier";
           departureLocation = "the pier";
@@ -187,9 +163,7 @@ function RadioOperatorDashboard() {
           arrivalLocation = "to Evrima";
           departureLocation = "Evrima";
         }
-
         const tenderPrefix = selectedTender ? `${selectedTender} ` : "A tender ";
-
         if (action === "ARRIVING") {
           formattedMessage = `${tenderPrefix}is arriving ${arrivalPreposition} ${arrivalLocation} in less than 5 minutes.`;
         } else if (action === "ARRIVED") {
@@ -200,38 +174,33 @@ function RadioOperatorDashboard() {
           formattedMessage = `${tenderPrefix}is ${action} ${locationText}.`;
         }
       }
-
       if (formattedMessage && activePortDay?.id) {
         await addDoc(collection(db, "guestNotifications"), {
           message: formattedMessage,
           action: action,
           direction: direction,
-          tender: selectedTender, // Store the tender information
+          tender: selectedTender,
           timestamp: serverTimestamp(),
-          portDayId: activePortDay.id, // <-- associate with port day
+          portDayId: activePortDay.id,
         });
-
         setAction("");
         setDirection("");
-        setSelectedTender(""); // Reset the selected tender
+        setSelectedTender("");
         setPreviewMessage("");
         setCustomMessage("");
         setIsCustomMessageMode(false);
       } else {
-        alert(
-          "Please select an action and a direction or enable custom message and enter a message before sending."
-        );
+        alert("Please select an action and a direction or enable custom message and enter a message before sending.");
       }
     } catch (error) {
       console.error("Error sending notification: ", error);
     }
   };
 
-  // Asynchronous function to handle deleting a specific notification.
+  // Delete notification
   const handleDeleteNotification = async (id) => {
     if (window.confirm("Are you sure you want to delete this notification?")) {
       try {
-        // Just delete from Firestore and let onSnapshot handle the state update
         await deleteDoc(doc(db, "guestNotifications", id));
       } catch (err) {
         console.error("Error deleting notification:", err);
@@ -240,85 +209,13 @@ function RadioOperatorDashboard() {
     }
   };
 
-  // Asynchronous function to handle clearing all notifications.
-  const handleClearNotifications = async () => {
-    // Check if the user is logged in and get confirmation from the user before proceeding.
-    if (
-      window.confirm(
-        "Are you sure you want to clear all notifications? This cannot be undone."
-      )
-    ) {
-      try {
-        // Retrieve all documents from the 'guestNotifications' collection.
-        const querySnapshot = await getDocs(
-          collection(db, "guestNotifications")
-        );
-        // Iterate over each document in the snapshot and delete it.
-        querySnapshot.docs.forEach(async (document) => {
-          await deleteDoc(doc(db, "guestNotifications", document.id));
-        });
-        // Clear the local 'notifications' state.
-        setNotifications([]);
-      } catch (error) {
-        // If an error occurs during clearing, log it to the console.
-        console.error("Error clearing notifications: ", error);
-      }
-    }
-  };
-
-  // Create new port day, set as active, and update UI (deactivate all others in DB)
-  const handleCreatePortDay = async () => {
-    if (!newPortDay.name) return;
-
-    // Confirmation dialog requiring user to type 'PORT'
-    const confirmation = window.prompt(
-      "To confirm creation of a new port day, please type PORT and press OK."
-    );
-    if (confirmation !== "PORT") {
-      alert("Port day creation cancelled. You must type PORT to confirm.");
-      return;
-    }
-
-    // Deactivate all port days in DB
-    const snapshot = await getDocs(collection(db, "portDays"));
-    const batch = writeBatch(db);
-    snapshot.docs.forEach(docSnap => {
-      batch.update(doc(db, "portDays", docSnap.id), { isActive: false });
-    });
-
-    // Use current date/time for startDate
-    const now = new Date();
-    const docRef = await addDoc(collection(db, "portDays"), {
-      name: newPortDay.name,
-      isActive: true,
-      startDate: now,
-    });
-    await batch.commit();
-
-    setActivePortDay({
-      id: docRef.id,
-      name: newPortDay.name,
-      isActive: true,
-      startDate: now,
-    });
-    setNewPortDay({ name: "" });
-  };
-
-  // Delete the active port day from UI AND from DB
-  const handleDeleteActivePortDayFromUI = async () => {
-    if (activePortDay && window.confirm("Are you sure you want to delete this port day?")) {
-      await deleteDoc(doc(db, "portDays", activePortDay.id));
-      setActivePortDay(null);
-    }
-  };
-
-  // Function to handle toggling the custom message mode.
+  // Custom message mode toggle
   const handleCustomMessageButtonClick = () => {
     setIsCustomMessageMode(!isCustomMessageMode);
     if (!isCustomMessageMode) {
       setAction("");
       setDirection("");
-      setSelectedTender(""); // Clear the selected tender
+      setSelectedTender("");
       setPreviewMessage("");
     }
     if (isCustomMessageMode) {
@@ -326,19 +223,114 @@ function RadioOperatorDashboard() {
     }
   };
 
-  // useEffect hook to clear action and direction when a custom message is entered and custom mode is enabled.
   useEffect(() => {
     if (isCustomMessageMode && customMessage.trim() !== "") {
       setAction("");
       setDirection("");
       setPreviewMessage("");
     }
-  }, [customMessage, isCustomMessageMode]); // This effect runs when 'customMessage' or 'isCustomMessageMode' changes.
+  }, [customMessage, isCustomMessageMode]);
 
-  // Conditional rendering: display a loading message while the authentication state is being determined.
+  // --- Port Day CRUD in Diagram ---
 
-  // Conditional rendering: if the user is not logged in, display the login screen.
+  // Start create mode
+  const handleStartCreateConfig = () => {
+    setConfigData({
+      name: "",
+      avgTime: "",
+      pierLocation: null,
+    });
+    setIsCreatingConfig(true);
+    setIsEditingConfig(false);
+  };
 
+
+  // Start edit mode
+  const handleStartEditConfig = () => {
+    if (
+      window.confirm(
+        "Are you sure you want to edit the active port day configuration? Changes will affect all users."
+      )
+    ) {
+      setConfigData({
+        name: activePortDay.name || "",
+        avgTime: activePortDay.avgTime || "",
+        pierLocation: activePortDay.pierLocation || null,
+      });
+      setIsEditingConfig(true);
+      setIsCreatingConfig(false);
+    }
+  };
+
+  // Save new port day
+  const handleSaveCreateConfig = async () => {
+    if (!configData.name || !configData.avgTime || !configData.pierLocation) {
+      alert("Please fill all fields and select a pier location.");
+      return;
+    }
+    // Deactivate all port days in DB
+    const snapshot = await getDocs(collection(db, "portDays"));
+    const batch = writeBatch(db);
+    snapshot.docs.forEach(docSnap => {
+      batch.update(doc(db, "portDays", docSnap.id), { isActive: false });
+    });
+    const now = new Date();
+    const plainPierLocation = configData.pierLocation
+      ? { lat: configData.pierLocation.lat, lng: configData.pierLocation.lng }
+      : null;
+    const docRef = await addDoc(collection(db, "portDays"), {
+      name: configData.name,
+      isActive: true,
+      startDate: now,
+      pierLocation: plainPierLocation,
+      avgTime: configData.avgTime,
+    });
+    await batch.commit();
+    setActivePortDay({
+      id: docRef.id,
+      name: configData.name,
+      isActive: true,
+      startDate: now,
+      pierLocation: configData.pierLocation,
+      avgTime: configData.avgTime,
+    });
+    setIsCreatingConfig(false);
+    setConfigData({ name: "", avgTime: "", pierLocation: null });
+  };
+
+  // Save edit to active port day
+  const handleSaveEditConfig = async () => {
+    if (!activePortDay?.id || !configData.name || !configData.avgTime || !configData.pierLocation) {
+      alert("Please fill all fields and select a pier location.");
+      return;
+    }
+    const plainPierLocation = configData.pierLocation
+      ? { lat: configData.pierLocation.lat, lng: configData.pierLocation.lng }
+      : null;
+    await updateDoc(doc(db, "portDays", activePortDay.id), {
+      name: configData.name,
+      avgTime: configData.avgTime,
+      pierLocation: plainPierLocation,
+    });
+    setActivePortDay({
+      ...activePortDay,
+      name: configData.name,
+      avgTime: configData.avgTime,
+      pierLocation: configData.pierLocation,
+    });
+    setIsEditingConfig(false);
+    setConfigData({ name: "", avgTime: "", pierLocation: null });
+  };
+
+  // End (delete) active port day
+  const handleDeleteActivePortDay = async () => {
+    if (activePortDay && window.confirm("Are you sure you want to delete this port day?")) {
+      await deleteDoc(doc(db, "portDays", activePortDay.id));
+      setActivePortDay(null);
+    }
+  };
+
+  // --- Configuration Diagram UI ---
   return (
     <div className="radio-operator-dashboard">
       <Logo />
@@ -350,130 +342,240 @@ function RadioOperatorDashboard() {
         </div>
       </button>
 
-      {/* Settings Button */}
-      <button
-        className="Btn analytics-button"
-        onClick={() => setShowSettingsModal(true)}
-        type="button"
-      >
-        <div className="sign">
-          <img src={SettingsIcon} alt="Settings" />
-        </div>
-      </button>
+      <h2>TENDER STATUS</h2>
+      <div className="configuration-diagram">
+        <h3>
+          {isConfigLoading ? (
+            "Loading data..."
+          ) : isCreatingConfig ? (
+            <textarea
+              className="editable-field"
+              placeholder="Port Name"
+              value={configData.name}
+              onChange={e =>
+                setConfigData(data => ({
+                  ...data,
+                  name: e.target.value,
+                }))
+              }
 
-      {/* Settings Modal */}
-      {showSettingsModal && (
-        <div className="modal-overlay" onClick={() => setShowSettingsModal(false)}>
-          <div
-            className="modal-content"
-            onClick={e => e.stopPropagation()}
-          >
-            <button
-              className="modal-close-btn"
-              onClick={() => setShowSettingsModal(false)}
-              title="Close"
-            >
-              ×
-            </button>
-            <h3>Port Day Management</h3>
-            <div className="port-day-management">
-              <div className="create">
-                <input
-                  type="text"
-                  placeholder="Port Day Name"
-                  value={newPortDay.name}
-                  onChange={e => setNewPortDay({ name: e.target.value })}
+              rows={1}
+            />
+          ) : activePortDay ? (
+            activePortDay.name
+          ) : (
+            "No active port day"
+          )}
+        </h3>
+        <div className="configuration">
+          {/* CREATE MODE */}
+          {isCreatingConfig && (
+            <>
+              <div className="configuration-item">
+                <img
+                  src={Location}
+                  alt="location-icon"
+                  className="config-location-clickable"
+                  onClick={() => setShowMap(true)}
+                  style={{ cursor: "pointer" }}
                 />
-                <button
-                  onClick={handleCreatePortDay}
-                  disabled={!newPortDay.name || newPortDay.name.trim() === ""}
+                <span className="configuration-value">
+                  {configData.pierLocation
+                    ? (
+                      <>
+                        Lat: {configData.pierLocation.lat.toFixed(2)}
+                        <br />
+                        Lng: {configData.pierLocation.lng.toFixed(2)}
+                      </>
+                    )
+                    : "Not set"}
+                </span>
+              </div>
+              <div className="configuration-item">
+                <img src={Clock} alt="clock-icon" />
+                <select
+                  className="avg-ride-time-select"
+                  value={configData.avgTime || ""}
+                  onChange={e =>
+                    setConfigData(data => ({
+                      ...data,
+                      avgTime: e.target.value,
+                    }))
+                  }
                 >
+                  <option value="">Avg Ride Time</option>
+                  {[...Array(12)].map((_, i) => {
+                    const min = (i + 1) * 5;
+                    return (
+                      <option key={min} value={min}>{min} min</option>
+                    );
+                  })}
+                </select>
+              </div>
+              <button
+                className="save-port-btn"
+                onClick={handleSaveCreateConfig}
+              >
+                Save
+              </button>
+              <button
+                className="end-port"
+                onClick={() => setIsCreatingConfig(false)}
+              >
+                Cancel
+              </button>
+            </>
+          )}
+          {/* EDIT MODE */}
+          {isEditingConfig && (
+            <>
+              <div className="configuration-item">
+                <img
+                  src={Location}
+                  alt="location-icon"
+                  className="config-location-clickable"
+                  onClick={() => setShowMap(true)}
+                  style={{ cursor: "pointer" }}
+                />
+                <span className="configuration-value">
+                  {configData.pierLocation
+                    ? (
+                      <>
+                        Lat: {configData.pierLocation.lat.toFixed(2)}
+                        <br />
+                        Lng: {configData.pierLocation.lng.toFixed(2)}
+                      </>
+                    )
+                    : "Not set"}
+                </span>
+              </div>
+              <div className="configuration-item">
+                <img src={Clock} alt="clock-icon" />
+                <select
+                  className="avg-ride-time-select"
+                  value={configData.avgTime || ""}
+                  onChange={e =>
+                    setConfigData(data => ({
+                      ...data,
+                      avgTime: e.target.value,
+                    }))
+                  }
+                >
+                  <option value="">Avg Ride Time</option>
+                  {[...Array(12)].map((_, i) => {
+                    const min = (i + 1) * 5;
+                    return (
+                      <option key={min} value={min}>{min} min</option>
+                    );
+                  })}
+                </select>
+              </div>
+              <button
+                className="save-port-btn"
+                onClick={handleSaveEditConfig}
+              >
+                Save
+              </button>
+              <button
+                className="end-port"
+                onClick={() => setIsEditingConfig(false)}
+              >
+                Cancel
+              </button>
+            </>
+          )}
+          {/* DEFAULT MODE */}
+          {!isCreatingConfig && !isEditingConfig && (
+            <>
+              {activePortDay ? (
+                <>
+                  <button className="edit-port" onClick={handleStartEditConfig}>
+                    Edit Port
+                  </button>
+                  <button className="end-port" onClick={handleDeleteActivePortDay}>
+                    End Day
+                  </button>
+                  <div className="configuration-item">
+                    <img src={Location} alt="location-icon" />
+                    <span className="configuration-value">
+                      {activePortDay.pierLocation
+                        ? (
+                          <>
+                            Lat: {activePortDay.pierLocation.lat.toFixed(2)}
+                            <br />
+                            Lng: {activePortDay.pierLocation.lng.toFixed(2)}
+                          </>
+                        )
+                        : "Not set"}
+                    </span>
+                  </div>
+                  <div className="configuration-item">
+                    <img src={Clock} alt="location-icon" />
+                    <span className="configuration-value">
+                      {activePortDay.avgTime
+                        ? `${activePortDay.avgTime} min`
+                        : "Not set"}
+                    </span>
+                  </div>
+                </>
+              ) : (
+                <button className="end-port" onClick={handleStartCreateConfig}>
                   Create
                 </button>
-              </div>
-              <ul>
-                {activePortDay ? (
-                  <li className="active">
-                    <span>
-                      {activePortDay.name}
-                      {activePortDay.startDate && (
-                        <span style={{ marginLeft: 10, color: "#aaa", fontSize: "0.9em" }}>
-                          {new Date(activePortDay.startDate.seconds
-                            ? activePortDay.startDate.seconds * 1000
-                            : activePortDay.startDate
-                          ).toLocaleString("en-GB", { year: "numeric", month: "2-digit", day: "2-digit" })}
-                        </span>
-                      )}
-                    </span>
-                  </li>
-                ) : (
-                  <li style={{ opacity: 0.6, color: "#aaa" }}>No active port day</li>
-                )}
-              </ul>
-            </div>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+      {/* Map modal for create/edit */}
+      {(isCreatingConfig || isEditingConfig) && showMap && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <PierLocationMap
+              initialPosition={configData.pierLocation}
+              onSelect={loc => {
+                setConfigData(data => ({
+                  ...data,
+                  pierLocation: loc,
+                }));
+                setShowMap(false);
+              }}
+              onChange={loc =>
+                setConfigData(data => ({
+                  ...data,
+                  pierLocation: loc,
+                }))
+              }
+              onClose={() => setShowMap(false)}
+            />
+            <button
+              className="modal-close-button"
+              onClick={() => setShowMap(false)}
+            >
+              X
+            </button>
           </div>
         </div>
       )}
-
-      <h2>TENDER STATUS</h2>
+      {/* --- Rest of the dashboard UI (tender, action, direction, notifications) --- */}
       <p>Select Tender:</p>
       <div>
         <div className="action-buttons-container">
-          <button
-            key="tender1"
-            onClick={() => handleTenderClick("Tender 1")}
-            className={`action-button ${isCustomMessageMode ? "action-button-disabled" : ""
-              } ${selectedTender === "Tender 1" ? "action-button-selected" : ""}`}
-          >
-            TENDER 1
-          </button>
-          <button
-            key="tender2"
-            onClick={() => handleTenderClick("Tender 2")}
-            className={`action-button ${isCustomMessageMode ? "action-button-disabled" : ""
-              } ${selectedTender === "Tender 2" ? "action-button-selected" : ""}`}
-          >
-            TENDER 2
-          </button>
-          <button
-            key="tender3"
-            onClick={() => handleTenderClick("Tender 3")}
-            className={`action-button ${isCustomMessageMode ? "action-button-disabled" : ""
-              } ${selectedTender === "Tender 3" ? "action-button-selected" : ""}`}
-          >
-            TENDER 3
-          </button>
-          <button
-            key="tender4"
-            onClick={() => handleTenderClick("Tender 4")}
-            className={`action-button ${isCustomMessageMode ? "action-button-disabled" : ""
-              } ${selectedTender === "Tender 4" ? "action-button-selected" : ""}`}
-          >
-            TENDER 4
-          </button>
-          <button
-            key="tender5"
-            onClick={() => handleTenderClick("Tender 5")}
-            className={`action-button ${isCustomMessageMode ? "action-button-disabled" : ""
-              } ${selectedTender === "Tender 5" ? "action-button-selected" : ""}`}
-          >
-            TENDER 5
-          </button>
-
+          {["Tender 1", "Tender 2", "Tender 3", "Tender 4", "Tender 5"].map(tender => (
+            <button
+              key={tender}
+              onClick={() => handleTenderClick(tender)}
+              className={`action-button ${isCustomMessageMode ? "action-button-disabled" : ""
+                } ${selectedTender === tender ? "action-button-selected" : ""}`}
+            >
+              {tender.toUpperCase()}
+            </button>
+          ))}
         </div>
       </div>
       <p>Select Action:</p>
       <div>
         <div className="action-buttons-container">
-          {/* <button
-            key="arriving"
-            onClick={() => handleActionClick("ARRIVING")}
-            className={`action-button ${isCustomMessageMode ? "action-button-disabled" : ""
-              } ${action === "ARRIVING" ? "action-button-selected" : ""}`}
-          // Disable the button if in custom message mode
-          >
-            ARRIVING
-          </button> */}
           <button
             key="arrived"
             onClick={() => handleActionClick("ARRIVED")}
@@ -513,8 +615,6 @@ function RadioOperatorDashboard() {
           </button>
         </div>
       </div>
-      {/* Add this after the direction buttons section */}
-
       <p>Custom message notification:</p>
       <div className="direction-buttons-container">
         <button
@@ -553,12 +653,6 @@ function RadioOperatorDashboard() {
         >
           Send Notification
         </button>
-        {/* <button
-          onClick={handleClearNotifications}
-          className="clear-notifications-button"
-        >
-          Clear All Notifications
-        </button> */}
       </div>
       <p>Guest Notifications</p>
       {notifications.length > 0 ? (

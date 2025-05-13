@@ -25,6 +25,7 @@ body {
   color: #fff;
   font-size: 2em;
   font-weight: 500;
+  margin-bottom: 0;
 }
 
 .radio-operator-dashboard p {
@@ -418,6 +419,11 @@ textarea,
     min-width: 120px;
     padding: 7px 8px;
   }
+
+  .configuration-diagram {
+    margin-top: 25px;
+  }
+
 }
 
 .port-day-management button {
@@ -549,48 +555,278 @@ textarea,
 
 }
 
+/* --- Modal Overlay --- */
 .modal-overlay {
   position: fixed;
-  z-index: 1000;
   inset: 0;
-  background: rgba(10, 18, 40, 0.75);
+  z-index: 1000;
+  background: rgba(255, 255, 255, 0.75);
   display: flex;
   align-items: center;
   justify-content: center;
+
 }
 
+/* --- Modal Content --- */
 .modal-content {
-  background: #181f2a;
-  border-radius: 10px;
-  padding: 32px 24px 24px 24px;
-  min-width: 320px;
-  max-width: 95vw;
-  box-shadow: 0 8px 32px #000a;
+  background: #444;
+  border-radius: 14px;
+  padding: 20px;
+  box-shadow: 0 8px 32px #000a, 0 2px 8px #1e2a4b22;
   position: relative;
-  color: #fff;
+  animation: modalFadeIn 0.25s;
+  width: 90%;
+  max-width: 600px;
+  height: auto;
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .modal-content h3 {
-  font-size: 1.3em;
-  margin: 0 0 16px 0;
-  color: #fff;
+  font-size: 1.35em;
+  color: white;
   font-weight: 400;
+  letter-spacing: 0.5px;
+  margin: 0;
 }
 
-.modal-close-btn {
+
+/* --- Port Day Management Modal Content --- */
+.port-day-management-modal-content {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.create {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.create-top {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.create-bottom {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.create-bottom span {
+  flex: 2;
+  color: #fff;
+}
+
+.port-day-management-modal-content input[type="text"] {
+  flex: 2;
+  padding: 9px 12px;
+  border-radius: 7px;
+  border: 1.5px solid #2c395a;
+  background-color: #232b3a;
+  color: #fff;
+  font-size: 1em;
+  transition: border 0.2s, box-shadow 0.2s;
+}
+
+.port-day-management-modal-content input[type="text"]:focus {
+  outline: none;
+  border: 1.5px solid #4B91F7;
+  box-shadow: 0 0 0 2px #4B91F755;
+}
+
+.modal-close-button {
   position: absolute;
-  top: 12px;
-  right: 18px;
+  top: 10px;
+  right: 10px;
   background: none;
   border: none;
-  color: #fff;
-  font-size: 2rem;
   cursor: pointer;
-  line-height: 1;
-  padding: 0;
-  transition: color 0.2s;
+  background-color: white;
+  width: 25px;
+  height: 25px;
+  padding: 5px;
+  z-index: 1001;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
-.modal-close-btn:hover {
-  color: #4B91F7;
+.select-pier-button,
+.create-button {
+  padding: 10px;
+  height: 35px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 5px;
+  background: linear-gradient(180deg, #ffffff 0%, #ffffff 100%);
+  background-origin: border-box;
+  box-shadow: 0px 0.5px 1.5px rgba(54, 122, 246, 0.25), inset 0px 0.8px 0px -0.25px rgba(255, 255, 255, 0.2);
+}
+
+.select-pier-button img {
+  width: 20px;
+  height: 20px;
+}
+
+/* --- Port Day Management List --- */
+.port-day-management-modal-content ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.port-day-management-modal-content li {
+  display: flex;
+  align-items: center;
+  background: #232323;
+  border-radius: 6px;
+  padding: 10px 14px;
+  color: #fff;
+  font-size: 1em;
+  border: 1px solid #292929;
+  gap: 16px;
+}
+
+
+.avg-ride-time-select {
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid #444;
+  background: #232323;
+  color: #fff;
+  font-size: 1em;
+  width: 100px;
+  font-size: 0.7em;
+  height: 40px;
+}
+
+.avg-ride-time-select:focus-visible {
+  outline: none;
+
+}
+
+.configuration-diagram {
+  background: #333;
+  border-radius: 14px;
+  position: relative;
+}
+
+.configuration {
+  margin-top: -20px;
+  color: white;
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  justify-content: space-around;
+  padding: 20px;
+}
+
+.configuration-diagram h3 {
+  width: 100%;
+  text-align: center;
+  font-size: 1.3em;
+}
+
+.configuration .configuration-item {
+  display: flex;
+  flex-direction: row;
+  gap: 15px;
+
+  align-items: center;
+  padding: 5px;
+}
+
+.configuration .configuration-item img {
+  color: white;
+  width: 25px;
+  height: 25px;
+  background-color: white;
+  padding: 5px;
+  border-radius: 5px;
+}
+
+.edit-port,
+.save-port-btn {
+  position: absolute;
+  top: -15px;
+  right: -15px;
+  border-radius: 20px;
+  background: linear-gradient(180deg, #5eff00 0%, #426d19 100%);
+  color: white
+}
+
+.end-port {
+  position: absolute;
+  top: -15px;
+  left: -15px;
+  border-radius: 20px;
+  background: linear-gradient(180deg, #5eff00 0%, #426d19 100%);
+  color: white
+}
+
+.editable-field {
+  background: #232323;
+  border-radius: 8px;
+  padding: 8px 12px;
+  border: 1px solid #444;
+  color: #fff;
+  font-size: 1em;
+  width: 50%;
+  height: 50px;
+  overflow: hidden;
+}
+
+@keyframes pulse-animation {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+    background: white;
+  }
+
+  50% {
+    transform: scale(1.1);
+    opacity: 1;
+    background: #c0c0c0;
+
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1;
+    background: white;
+  }
+}
+
+.config-location-clickable {
+  animation: pulse-animation 3s infinite;
+  /* Apply the animation */
+  transition: background-color 0.2s;
 }
