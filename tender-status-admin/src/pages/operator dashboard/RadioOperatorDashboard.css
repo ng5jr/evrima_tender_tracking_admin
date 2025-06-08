@@ -733,6 +733,19 @@ textarea,
 
 }
 
+.last-tender-time-input {
+  box-sizing: border-box;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid #444;
+  background: #232323;
+  color: #fff;
+  font-size: 1em;
+  width: 120px;
+  font-size: 1em;
+  height: 40px;
+}
+
 .configuration-diagram {
   background: #333;
   border-radius: 14px;

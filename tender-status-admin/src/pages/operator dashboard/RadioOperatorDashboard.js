@@ -43,6 +43,7 @@ function RadioOperatorDashboard() {
     name: "",
     avgTime: "",
     pierLocation: null,
+    lastTenderTime: "", // <-- Add this
   });
   const [showMap, setShowMap] = useState(false);
 
@@ -239,6 +240,7 @@ function RadioOperatorDashboard() {
       name: "",
       avgTime: "",
       pierLocation: null,
+      lastTenderTime: "", // <-- Add this
     });
     setIsCreatingConfig(true);
     setIsEditingConfig(false);
@@ -256,6 +258,7 @@ function RadioOperatorDashboard() {
         name: activePortDay.name || "",
         avgTime: activePortDay.avgTime || "",
         pierLocation: activePortDay.pierLocation || null,
+        lastTenderTime: activePortDay.lastTenderTime || "", // <-- Add this
       });
       setIsEditingConfig(true);
       setIsCreatingConfig(false);
@@ -284,6 +287,7 @@ function RadioOperatorDashboard() {
       startDate: now,
       pierLocation: plainPierLocation,
       avgTime: configData.avgTime,
+      lastTenderTime: configData.lastTenderTime, // <-- Add this
     });
     await batch.commit();
     setActivePortDay({
@@ -293,9 +297,10 @@ function RadioOperatorDashboard() {
       startDate: now,
       pierLocation: configData.pierLocation,
       avgTime: configData.avgTime,
+      lastTenderTime: configData.lastTenderTime, // <-- Add this
     });
     setIsCreatingConfig(false);
-    setConfigData({ name: "", avgTime: "", pierLocation: null });
+    setConfigData({ name: "", avgTime: "", pierLocation: null, lastTenderTime: "" });
   };
 
   // Save edit to active port day
@@ -311,15 +316,17 @@ function RadioOperatorDashboard() {
       name: configData.name,
       avgTime: configData.avgTime,
       pierLocation: plainPierLocation,
+      lastTenderTime: configData.lastTenderTime, // <-- Add this
     });
     setActivePortDay({
       ...activePortDay,
       name: configData.name,
       avgTime: configData.avgTime,
       pierLocation: configData.pierLocation,
+      lastTenderTime: configData.lastTenderTime, // <-- Add this
     });
     setIsEditingConfig(false);
-    setConfigData({ name: "", avgTime: "", pierLocation: null });
+    setConfigData({ name: "", avgTime: "", pierLocation: null, lastTenderTime: "" });
   };
 
   // End (delete) active port day
@@ -412,6 +419,21 @@ function RadioOperatorDashboard() {
                   })}
                 </select>
               </div>
+              <div className="configuration-item">
+                <label style={{ marginRight: 8 }}>Last Tender:</label>
+                <input
+                  type="time"
+                  value={configData.lastTenderTime}
+                  onChange={e =>
+                    setConfigData(data => ({
+                      ...data,
+                      lastTenderTime: e.target.value,
+                    }))
+                  }
+                  className="last-tender-time-input"
+                  required
+                />
+              </div>
               <button
                 className="save-port-btn"
                 onClick={handleSaveCreateConfig}
@@ -470,6 +492,21 @@ function RadioOperatorDashboard() {
                   })}
                 </select>
               </div>
+              <div className="configuration-item">
+                <label style={{ marginRight: 8 }}>Last Tender:</label>
+                <input
+                  type="time"
+                  value={configData.lastTenderTime}
+                  onChange={e =>
+                    setConfigData(data => ({
+                      ...data,
+                      lastTenderTime: e.target.value,
+                    }))
+                  }
+                  className="last-tender-time-input"
+                  required
+                />
+              </div>
               <button
                 className="save-port-btn"
                 onClick={handleSaveEditConfig}
@@ -514,6 +551,14 @@ function RadioOperatorDashboard() {
                     <span className="configuration-value">
                       {activePortDay.avgTime
                         ? `${activePortDay.avgTime} min`
+                        : "Not set"}
+                    </span>
+                  </div>
+                  <div className="configuration-item">
+                    <span className="configuration-value">
+                      Last Tender:{" "}
+                      {activePortDay.lastTenderTime
+                        ? activePortDay.lastTenderTime
                         : "Not set"}
                     </span>
                   </div>
