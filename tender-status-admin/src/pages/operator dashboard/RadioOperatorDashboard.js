@@ -43,7 +43,8 @@ function RadioOperatorDashboard() {
     name: "",
     avgTime: "",
     pierLocation: null,
-    lastTenderTime: "", // <-- Add this
+    lastTenderTime: "",
+    timezone: "",
   });
   const [showMap, setShowMap] = useState(false);
 
@@ -176,12 +177,18 @@ function RadioOperatorDashboard() {
         }
       }
       if (formattedMessage && activePortDay?.id) {
+        // Get actual UTC time, then add the port's timezone offset
+        const now = new Date();
+        const utcTime = new Date(now.getTime() + (now.getTimezoneOffset() * 60 * 1000));
+        const timezoneOffset = activePortDay.timezone ? parseFloat(activePortDay.timezone) : 0;
+        const localTimestamp = new Date(utcTime.getTime() + (timezoneOffset * 60 * 60 * 1000));
+
         await addDoc(collection(db, "guestNotifications"), {
           message: formattedMessage,
           action: action,
           direction: direction,
           tender: selectedTender,
-          timestamp: serverTimestamp(),
+          timestamp: localTimestamp, // Store the port's local time
           portDayId: activePortDay.id,
         });
         setAction("");
@@ -191,7 +198,7 @@ function RadioOperatorDashboard() {
         setCustomMessage("");
         setIsCustomMessageMode(false);
       } else {
-        alert("Please select an action and a direction or enable custom message and enter a message before sending.");
+        alert("Please check port day information is set, select an action and a direction or enable custom message and enter a message before sending.");
       }
     } catch (error) {
       console.error("Error sending notification: ", error);
@@ -240,7 +247,8 @@ function RadioOperatorDashboard() {
       name: "",
       avgTime: "",
       pierLocation: null,
-      lastTenderTime: "", // <-- Add this
+      lastTenderTime: "",
+      timezone: "",
     });
     setIsCreatingConfig(true);
     setIsEditingConfig(false);
@@ -258,7 +266,8 @@ function RadioOperatorDashboard() {
         name: activePortDay.name || "",
         avgTime: activePortDay.avgTime || "",
         pierLocation: activePortDay.pierLocation || null,
-        lastTenderTime: activePortDay.lastTenderTime || "", // <-- Add this
+        lastTenderTime: activePortDay.lastTenderTime || "",
+        timezone: activePortDay.timezone || "",
       });
       setIsEditingConfig(true);
       setIsCreatingConfig(false);
@@ -287,7 +296,8 @@ function RadioOperatorDashboard() {
       startDate: now,
       pierLocation: plainPierLocation,
       avgTime: configData.avgTime,
-      lastTenderTime: configData.lastTenderTime, // <-- Add this
+      lastTenderTime: configData.lastTenderTime,
+      timezone: configData.timezone,
     });
     await batch.commit();
     setActivePortDay({
@@ -297,10 +307,11 @@ function RadioOperatorDashboard() {
       startDate: now,
       pierLocation: configData.pierLocation,
       avgTime: configData.avgTime,
-      lastTenderTime: configData.lastTenderTime, // <-- Add this
+      lastTenderTime: configData.lastTenderTime,
+      timezone: configData.timezone,
     });
     setIsCreatingConfig(false);
-    setConfigData({ name: "", avgTime: "", pierLocation: null, lastTenderTime: "" });
+    setConfigData({ name: "", avgTime: "", pierLocation: null, lastTenderTime: "", timezone: "" });
   };
 
   // Save edit to active port day
@@ -316,17 +327,19 @@ function RadioOperatorDashboard() {
       name: configData.name,
       avgTime: configData.avgTime,
       pierLocation: plainPierLocation,
-      lastTenderTime: configData.lastTenderTime, // <-- Add this
+      lastTenderTime: configData.lastTenderTime,
+      timezone: configData.timezone,
     });
     setActivePortDay({
       ...activePortDay,
       name: configData.name,
       avgTime: configData.avgTime,
       pierLocation: configData.pierLocation,
-      lastTenderTime: configData.lastTenderTime, // <-- Add this
+      lastTenderTime: configData.lastTenderTime,
+      timezone: configData.timezone,
     });
     setIsEditingConfig(false);
-    setConfigData({ name: "", avgTime: "", pierLocation: null, lastTenderTime: "" });
+    setConfigData({ name: "", avgTime: "", pierLocation: null, lastTenderTime: "", timezone: "" });
   };
 
   // End (delete) active port day
@@ -355,21 +368,34 @@ function RadioOperatorDashboard() {
           {isConfigLoading ? (
             "Loading data..."
           ) : isCreatingConfig ? (
-            <textarea
-              className="editable-field"
-              placeholder="Port Name"
-              value={configData.name}
-              onChange={e =>
-                setConfigData(data => ({
-                  ...data,
-                  name: e.target.value,
-                }))
-              }
+            <div className="config-title">
+              <textarea
+                className="editable-field"
+                placeholder="Port Name"
+                value={configData.name}
+                onChange={e =>
+                  setConfigData(data => ({
+                    ...data,
+                    name: e.target.value,
+                  }))
+                }
 
-              rows={1}
-            />
+                rows={1}
+              />
+              <textarea className="editable-field time-zone"
+                placeholder="Time Zone"
+                value={configData.timezone}
+                onChange={e =>
+                  setConfigData(data => ({
+                    ...data,
+                    timezone: e.target.value,
+                  }))
+                }
+
+                rows={1}></textarea>
+            </div>
           ) : activePortDay ? (
-            activePortDay.name
+            activePortDay.name + (activePortDay.timezone ? ` (UTC ${activePortDay.timezone})` : "")
           ) : (
             "No active port day"
           )}
@@ -708,16 +734,26 @@ function RadioOperatorDashboard() {
                 <p>{notification.message}</p>
                 {notification.timestamp && (
                   <small>
-                    {notification.timestamp
-                      ?.toDate()
-                      ?.toLocaleString(undefined, {
-                        day: "2-digit",
-                        month: "2-digit",
-                        year: "numeric",
-                        hour: "numeric",
-                        minute: "numeric",
-                        hour12: true,
-                      })}
+                    {(() => {
+                      try {
+                        // Since timestamp is already in local time, just format it
+                        const localDate = notification.timestamp.toDate ?
+                          notification.timestamp.toDate() :
+                          new Date(notification.timestamp);
+
+                        return localDate.toLocaleString(undefined, {
+                          day: "2-digit",
+                          month: "2-digit",
+                          year: "numeric",
+                          hour: "numeric",
+                          minute: "numeric",
+                          hour12: true,
+                        });
+                      } catch (error) {
+                        console.error('Error formatting timestamp:', error);
+                        return 'Invalid date';
+                      }
+                    })()}
                   </small>
                 )}
               </div>
