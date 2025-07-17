@@ -183,12 +183,21 @@ function RadioOperatorDashboard() {
         const timezoneOffset = activePortDay.timezone ? parseFloat(activePortDay.timezone) : 0;
         const localTimestamp = new Date(utcTime.getTime() + (timezoneOffset * 60 * 60 * 1000));
 
+        const localTimestampString = localTimestamp.toLocaleString(undefined, {
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+        });
+
         await addDoc(collection(db, "guestNotifications"), {
           message: formattedMessage,
           action: action,
           direction: direction,
           tender: selectedTender,
-          timestamp: localTimestamp, // Store the port's local time
+          timestamp: localTimestampString, // Store as string
           portDayId: activePortDay.id,
         });
         setAction("");
@@ -734,26 +743,17 @@ function RadioOperatorDashboard() {
                 <p>{notification.message}</p>
                 {notification.timestamp && (
                   <small>
-                    {(() => {
-                      try {
-                        // Since timestamp is already in local time, just format it
-                        const localDate = notification.timestamp.toDate ?
-                          notification.timestamp.toDate() :
-                          new Date(notification.timestamp);
-
-                        return localDate.toLocaleString(undefined, {
-                          day: "2-digit",
+                    {typeof notification.timestamp === "string"
+                      ? notification.timestamp
+                      : notification.timestamp.seconds
+                        ? new Date(notification.timestamp.seconds * 1000).toLocaleString(undefined, {
                           month: "2-digit",
-                          year: "numeric",
-                          hour: "numeric",
-                          minute: "numeric",
-                          hour12: true,
-                        });
-                      } catch (error) {
-                        console.error('Error formatting timestamp:', error);
-                        return 'Invalid date';
-                      }
-                    })()}
+                          day: "2-digit",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          hour12: false,
+                        })
+                        : ""}
                   </small>
                 )}
               </div>
