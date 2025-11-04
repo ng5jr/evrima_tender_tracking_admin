@@ -1268,8 +1268,8 @@ input[type="number"] {
   }
 }
 
-/* Mobile responsive adjustments for toast */
-@media (max-width: 600px) {
+  /* Mobile responsive adjustments for toast */
+  @media (max-width: 600px) {
   .toast-container {
     top: 10px;
     right: 10px;
