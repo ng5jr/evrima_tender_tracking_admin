@@ -20,8 +20,13 @@ import Location from "../../assets/location.png";
 import Clock from "../../assets/clock.png";
 import SettingsIcon from "../../assets/settings.png";
 import PierLocationMap from "../../components/PierLocationMap";
+import ToastContainer from "../../components/ToastContainer";
+import useToast from "../../hooks/useToast";
 
 function RadioOperatorDashboard() {
+  // Toast notifications
+  const { toasts, removeToast, showSuccess, showError, showWarning } = useToast();
+
   // Notification and tender state
   const [action, setAction] = useState("");
   const [direction, setDirection] = useState("");
@@ -30,6 +35,7 @@ function RadioOperatorDashboard() {
   const [isCustomMessageMode, setIsCustomMessageMode] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [selectedTender, setSelectedTender] = useState("");
+  const [isSending, setIsSending] = useState(false);
 
   // Port day state
   const [activePortDay, setActivePortDay] = useState(null);
@@ -147,8 +153,16 @@ function RadioOperatorDashboard() {
 
   // Send notification
   const handleSendNotification = async () => {
+    // Prevent multiple sends
+    if (isSending) {
+      showWarning("Please wait, notification is being sent...");
+      return;
+    }
+
     try {
+      setIsSending(true);
       let formattedMessage = "";
+
       if (isCustomMessageMode && customMessage.trim() !== "") {
         formattedMessage = customMessage;
       } else if (action && direction) {
@@ -176,6 +190,7 @@ function RadioOperatorDashboard() {
           formattedMessage = `${tenderPrefix}is ${action} ${locationText}.`;
         }
       }
+
       if (formattedMessage && activePortDay?.id) {
         // Get actual UTC time, then add the port's timezone offset
         const now = new Date();
@@ -183,6 +198,7 @@ function RadioOperatorDashboard() {
         const timezoneOffset = activePortDay.timezone ? parseFloat(activePortDay.timezone) : 0;
         const localTimestamp = new Date(utcTime.getTime() + (timezoneOffset * 60 * 60 * 1000));
 
+        // Format as string (e.g. "YYYY-MM-DD HH:mm")
         const localTimestampString = localTimestamp.toLocaleString(undefined, {
           year: "numeric",
           month: "2-digit",
@@ -200,6 +216,11 @@ function RadioOperatorDashboard() {
           timestamp: localTimestampString, // Store as string
           portDayId: activePortDay.id,
         });
+
+        // Success toast
+        showSuccess("Notification sent successfully! Database updated.", 4000);
+
+        // Reset form
         setAction("");
         setDirection("");
         setSelectedTender("");
@@ -207,10 +228,13 @@ function RadioOperatorDashboard() {
         setCustomMessage("");
         setIsCustomMessageMode(false);
       } else {
-        alert("Please check port day information is set, select an action and a direction or enable custom message and enter a message before sending.");
+        showError("Please check port day information is set, select an action and a direction or enable custom message and enter a message before sending.");
       }
     } catch (error) {
       console.error("Error sending notification: ", error);
+      showError("Failed to send notification. Please check your connection and try again.");
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -219,9 +243,10 @@ function RadioOperatorDashboard() {
     if (window.confirm("Are you sure you want to delete this notification?")) {
       try {
         await deleteDoc(doc(db, "guestNotifications", id));
+        showSuccess("Notification deleted successfully.");
       } catch (err) {
         console.error("Error deleting notification:", err);
-        alert("Failed to delete notification.");
+        showError("Failed to delete notification. Please try again.");
       }
     }
   };
@@ -283,80 +308,153 @@ function RadioOperatorDashboard() {
     }
   };
 
+  // Helper: validate UTC offset (integers or .5 only, -12 to +14)
+  const isValidTimezone = (val) => {
+    if (val === "" || val === null || val === undefined) return false;
+    const num = Number(val);
+    if (!isFinite(num)) return false;
+    if (num < -12 || num > 14) return false;
+    const fractional = Math.abs(num % 1);
+    return fractional === 0 || fractional === 0.5;
+  };
+
+  // Display as "+x" when positive (e.g., "+6", "+5.5")
+  const formatOffsetDisplay = (val) => {
+    if (val === "" || val === null || val === undefined) return "";
+    const num = Number(val);
+    if (!isFinite(num)) return String(val);
+    const rounded = Math.round(num * 2) / 2;
+    const str = Number.isInteger(rounded) ? rounded.toFixed(0) : String(rounded);
+    return rounded > 0 ? `+${str}` : str;
+  };
+
+  // Clamp to [-12, 14] and snap to .5
+  const clampHalfStep = (num) => {
+    if (!isFinite(num)) return NaN;
+    let n = Math.round(num * 2) / 2;
+    if (n < -12) n = -12;
+    if (n > 14) n = 14;
+    return n;
+  };
+
+  // Normalize any input string to the display format with sign and snapping
+  const normalizeOffsetString = (val) => {
+    const num = Number(val);
+    if (!isFinite(num)) return String(val);
+    const n = clampHalfStep(num);
+    return formatOffsetDisplay(n);
+  };
+
   // Save new port day
   const handleSaveCreateConfig = async () => {
-    if (!configData.name || !configData.avgTime || !configData.pierLocation) {
-      alert("Please fill all fields and select a pier location.");
+    if (!configData.name || !configData.avgTime || !configData.pierLocation || !configData.timezone) {
+      showError("Please fill all fields and select a pier location.");
       return;
     }
-    // Deactivate all port days in DB
-    const snapshot = await getDocs(collection(db, "portDays"));
-    const batch = writeBatch(db);
-    snapshot.docs.forEach(docSnap => {
-      batch.update(doc(db, "portDays", docSnap.id), { isActive: false });
-    });
-    const now = new Date();
-    const plainPierLocation = configData.pierLocation
-      ? { lat: configData.pierLocation.lat, lng: configData.pierLocation.lng }
-      : null;
-    const docRef = await addDoc(collection(db, "portDays"), {
-      name: configData.name,
-      isActive: true,
-      startDate: now,
-      pierLocation: plainPierLocation,
-      avgTime: configData.avgTime,
-      lastTenderTime: configData.lastTenderTime,
-      timezone: configData.timezone,
-    });
-    await batch.commit();
-    setActivePortDay({
-      id: docRef.id,
-      name: configData.name,
-      isActive: true,
-      startDate: now,
-      pierLocation: configData.pierLocation,
-      avgTime: configData.avgTime,
-      lastTenderTime: configData.lastTenderTime,
-      timezone: configData.timezone,
-    });
-    setIsCreatingConfig(false);
-    setConfigData({ name: "", avgTime: "", pierLocation: null, lastTenderTime: "", timezone: "" });
+    if (!isValidTimezone(configData.timezone)) {
+      showError("Time zone must be a numeric UTC offset between -12 and +14, using .5 if needed (e.g., -1, 2, 2.5).");
+      return;
+    }
+    try {
+      // Deactivate all port days in DB
+      const snapshot = await getDocs(collection(db, "portDays"));
+      const batch = writeBatch(db);
+      snapshot.docs.forEach(docSnap => {
+        batch.update(doc(db, "portDays", docSnap.id), { isActive: false });
+      });
+      const now = new Date();
+      const plainPierLocation = configData.pierLocation
+        ? { lat: configData.pierLocation.lat, lng: configData.pierLocation.lng }
+        : null;
+      const docRef = await addDoc(collection(db, "portDays"), {
+        name: configData.name,
+        isActive: true,
+        startDate: now,
+        pierLocation: plainPierLocation,
+        avgTime: configData.avgTime,
+        lastTenderTime: configData.lastTenderTime,
+        timezone: String(configData.timezone).trim(),
+      });
+      await batch.commit();
+      setActivePortDay({
+        id: docRef.id,
+        name: configData.name,
+        isActive: true,
+        startDate: now,
+        pierLocation: configData.pierLocation,
+        avgTime: configData.avgTime,
+        lastTenderTime: configData.lastTenderTime,
+        timezone: String(configData.timezone).trim(),
+      });
+      setIsCreatingConfig(false);
+      setConfigData({ name: "", avgTime: "", pierLocation: null, lastTenderTime: "", timezone: "" });
+      showSuccess("Port day created successfully!");
+    } catch (error) {
+      console.error("Error creating port day:", error);
+      showError("Failed to create port day. Please try again.");
+    }
   };
 
   // Save edit to active port day
   const handleSaveEditConfig = async () => {
-    if (!activePortDay?.id || !configData.name || !configData.avgTime || !configData.pierLocation) {
-      alert("Please fill all fields and select a pier location.");
+    if (!activePortDay?.id || !configData.name || !configData.avgTime || !configData.pierLocation || !configData.timezone) {
+      showError("Please fill all fields and select a pier location.");
       return;
     }
-    const plainPierLocation = configData.pierLocation
-      ? { lat: configData.pierLocation.lat, lng: configData.pierLocation.lng }
-      : null;
-    await updateDoc(doc(db, "portDays", activePortDay.id), {
-      name: configData.name,
-      avgTime: configData.avgTime,
-      pierLocation: plainPierLocation,
-      lastTenderTime: configData.lastTenderTime,
-      timezone: configData.timezone,
-    });
-    setActivePortDay({
-      ...activePortDay,
-      name: configData.name,
-      avgTime: configData.avgTime,
-      pierLocation: configData.pierLocation,
-      lastTenderTime: configData.lastTenderTime,
-      timezone: configData.timezone,
-    });
-    setIsEditingConfig(false);
-    setConfigData({ name: "", avgTime: "", pierLocation: null, lastTenderTime: "", timezone: "" });
+    if (!isValidTimezone(configData.timezone)) {
+      showError("Time zone must be a numeric UTC offset between -12 and +14, using .5 if needed (e.g., -1, 2, 2.5).");
+      return;
+    }
+    try {
+      const plainPierLocation = configData.pierLocation
+        ? { lat: configData.pierLocation.lat, lng: configData.pierLocation.lng }
+        : null;
+      await updateDoc(doc(db, "portDays", activePortDay.id), {
+        name: configData.name,
+        avgTime: configData.avgTime,
+        pierLocation: plainPierLocation,
+        lastTenderTime: configData.lastTenderTime,
+        timezone: String(configData.timezone).trim(),
+      });
+      setActivePortDay({
+        ...activePortDay,
+        name: configData.name,
+        avgTime: configData.avgTime,
+        pierLocation: configData.pierLocation,
+        lastTenderTime: configData.lastTenderTime,
+        timezone: String(configData.timezone).trim(),
+      });
+      setIsEditingConfig(false);
+      setConfigData({ name: "", avgTime: "", pierLocation: null, lastTenderTime: "", timezone: "" });
+      showSuccess("Port day updated successfully!");
+    } catch (error) {
+      console.error("Error updating port day:", error);
+      showError("Failed to update port day. Please try again.");
+    }
   };
 
   // End (delete) active port day
   const handleDeleteActivePortDay = async () => {
     if (activePortDay && window.confirm("Are you sure you want to delete this port day?")) {
-      await deleteDoc(doc(db, "portDays", activePortDay.id));
-      setActivePortDay(null);
+      try {
+        await deleteDoc(doc(db, "portDays", activePortDay.id));
+        setActivePortDay(null);
+        showSuccess("Port day deleted successfully!");
+      } catch (error) {
+        console.error("Error deleting port day:", error);
+        showError("Failed to delete port day. Please try again.");
+      }
     }
+  };
+
+  // Adjust timezone by +/- 0.5 within [-12, 14]
+  const adjustTimezone = (delta) => {
+    setConfigData(prev => {
+      const current = prev.timezone === "" ? 0 : Number(prev.timezone);
+      if (!isFinite(current)) return prev;
+      const next = clampHalfStep(current + delta);
+      return { ...prev, timezone: formatOffsetDisplay(next) };
+    });
   };
 
   // --- Configuration Diagram UI ---
@@ -373,7 +471,7 @@ function RadioOperatorDashboard() {
 
       <h2>TENDER STATUS</h2>
       <div className="configuration-diagram">
-        <h3>
+        <h3 className="config-header">
           {isConfigLoading ? (
             "Loading data..."
           ) : isCreatingConfig ? (
@@ -388,23 +486,108 @@ function RadioOperatorDashboard() {
                     name: e.target.value,
                   }))
                 }
-
                 rows={1}
               />
-              <textarea className="editable-field time-zone"
-                placeholder="Time Zone"
-                value={configData.timezone}
+              {/* Timezone with large +/- controls */}
+              <div className="timezone-control">
+                <button
+                  type="button"
+                  className="tz-btn tz-minus"
+                  onClick={() => adjustTimezone(-0.5)}
+                  aria-label="Decrease timezone"
+                >
+                  −
+                </button>
+                <input
+                  className="editable-field time-zone tz-input"
+                  type="text"
+                  inputMode="decimal"
+                  placeholder="UTC"
+                  value={configData.timezone}
+                  onChange={e =>
+                    setConfigData(data => ({
+                      ...data,
+                      timezone: e.target.value.trim(),
+                    }))
+                  }
+                  onBlur={(e) => {
+                    const v = e.target.value.trim();
+                    if (v === "") return;
+                    setConfigData(data => ({
+                      ...data,
+                      timezone: normalizeOffsetString(v),
+                    }));
+                  }}
+                  onWheel={(e) => e.currentTarget.blur()}
+                />
+                <button
+                  type="button"
+                  className="tz-btn tz-plus"
+                  onClick={() => adjustTimezone(0.5)}
+                  aria-label="Increase timezone"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+          ) : isEditingConfig ? (
+            <div className="config-title">
+              <textarea
+                className="editable-field port-name"
+                placeholder="Port Name"
+                value={configData.name}
                 onChange={e =>
                   setConfigData(data => ({
                     ...data,
-                    timezone: e.target.value,
+                    name: e.target.value,
                   }))
                 }
-
-                rows={1}></textarea>
+                rows={1}
+              />
+              {/* Timezone with large +/- controls (same as create) */}
+              <div className="timezone-control">
+                <button
+                  type="button"
+                  className="tz-btn tz-minus"
+                  onClick={() => adjustTimezone(-0.5)}
+                  aria-label="Decrease timezone"
+                >
+                  −
+                </button>
+                <input
+                  className="editable-field time-zone tz-input"
+                  type="text"
+                  inputMode="decimal"
+                  placeholder="UTC"
+                  value={configData.timezone}
+                  onChange={e =>
+                    setConfigData(data => ({
+                      ...data,
+                      timezone: e.target.value.trim(),
+                    }))
+                  }
+                  onBlur={(e) => {
+                    const v = e.target.value.trim();
+                    if (v === "") return;
+                    setConfigData(data => ({
+                      ...data,
+                      timezone: normalizeOffsetString(v),
+                    }));
+                  }}
+                  onWheel={(e) => e.currentTarget.blur()}
+                />
+                <button
+                  type="button"
+                  className="tz-btn tz-plus"
+                  onClick={() => adjustTimezone(0.5)}
+                  aria-label="Increase timezone"
+                >
+                  +
+                </button>
+              </div>
             </div>
           ) : activePortDay ? (
-            activePortDay.name + (activePortDay.timezone ? ` (UTC ${activePortDay.timezone})` : "")
+            activePortDay.name + (activePortDay.timezone ? ` (UTC ${formatOffsetDisplay(activePortDay.timezone)})` : "")
           ) : (
             "No active port day"
           )}
@@ -486,6 +669,12 @@ function RadioOperatorDashboard() {
           {/* EDIT MODE */}
           {isEditingConfig && (
             <>
+              {/* Removed old standalone timezone input; validation hint remains */}
+              {!isValidTimezone(configData.timezone || "") && (
+                <small style={{ color: "tomato", marginBottom: 8 }}>
+                  Enter a numeric UTC offset between -12 and +14, using .5 if needed (e.g., -1, 2, 2.5).
+                </small>
+              )}
               <div className="configuration-item">
                 <img
                   src={Location}
@@ -545,6 +734,7 @@ function RadioOperatorDashboard() {
               <button
                 className="save-port-btn"
                 onClick={handleSaveEditConfig}
+                disabled={!isValidTimezone(configData.timezone || "")}
               >
                 Save
               </button>
@@ -640,8 +830,23 @@ function RadioOperatorDashboard() {
       {/* --- Rest of the dashboard UI (tender, action, direction, notifications) --- */}
       <p>Select Tender:</p>
       <div>
-        <div className="action-buttons-container">
-          {["Tender 1", "Tender 2", "Tender 3", "Tender 4", "Tender 5"].map(tender => (
+        {/* First row - 4 buttons */}
+        <div className="action-buttons-container action-buttons-row-4">
+          {["Tender 1", "Tender 2", "Tender 3", "Tender 4"].map(tender => (
+            <button
+              key={tender}
+              onClick={() => handleTenderClick(tender)}
+              className={`action-button ${isCustomMessageMode ? "action-button-disabled" : ""
+                } ${selectedTender === tender ? "action-button-selected" : ""}`}
+            >
+              {tender.toUpperCase()}
+            </button>
+          ))}
+        </div>
+
+        {/* Third row - 3 buttons */}
+        <div className="action-buttons-container action-buttons-row-3">
+          {["Local Tender 1", "Local Tender 2", "Local Tender 3"].map(tender => (
             <button
               key={tender}
               onClick={() => handleTenderClick(tender)}
@@ -708,68 +913,77 @@ function RadioOperatorDashboard() {
         </button>
       </div>
       <p>Preview Message:</p>
-      {isCustomMessageMode ? (
-        <textarea
-          value={customMessage}
-          onChange={(e) => setCustomMessage(e.target.value)}
-          placeholder="Enter your custom message here..."
-          className="preview-message"
-        />
-      ) : (
-        <div>
-          <div className="preview-message">{previewMessage}</div>
-        </div>
-      )}
+      {
+        isCustomMessageMode ? (
+          <textarea
+            value={customMessage}
+            onChange={(e) => setCustomMessage(e.target.value)}
+            placeholder="Enter your custom message here..."
+            className="preview-message"
+          />
+        ) : (
+          <div>
+            <div className="preview-message">{previewMessage}</div>
+          </div>
+        )
+      }
       <div className="button-container">
         <button
           disabled={
+            isSending ||
             !(
               (action && direction) ||
               (customMessage && customMessage.trim() !== "")
             )
           }
           onClick={handleSendNotification}
-          className="send-notification-button"
+          className={`send-notification-button ${isSending ? 'sending' : ''}`}
         >
-          Send Notification
+          {isSending ? 'Sending...' : 'Send Notification'}
         </button>
       </div>
       <p>Guest Notifications</p>
-      {notifications.length > 0 ? (
-        <ul className="guest-notifications-list-operator">
-          {notifications.map((notification) => (
-            <li key={notification.id} className="notification-item-operator">
-              <div className="notification-content-operator">
-                <p>{notification.message}</p>
-                {notification.timestamp && (
-                  <small>
-                    {typeof notification.timestamp === "string"
-                      ? notification.timestamp
-                      : notification.timestamp.seconds
-                        ? new Date(notification.timestamp.seconds * 1000).toLocaleString(undefined, {
-                          month: "2-digit",
-                          day: "2-digit",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                          hour12: false,
-                        })
-                        : ""}
-                  </small>
-                )}
-              </div>
-              <button
-                onClick={() => handleDeleteNotification(notification.id)}
-                className="delete-notification-button"
-              >
-                Delete
-              </button>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <small>No guest notifications yet.</small>
-      )}
-    </div>
+      {
+        notifications.length > 0 ? (
+          <ul className="guest-notifications-list-operator">
+            {notifications.map((notification) => (
+              <li key={notification.id} className="notification-item-operator">
+                <div className="notification-content-operator">
+                  <p>{notification.message}</p>
+                  {notification.timestamp && (
+                    <small>
+                      {typeof notification.timestamp === "string"
+                        ? notification.timestamp
+                        : notification.timestamp.seconds
+                          ? new Date(notification.timestamp.seconds * 1000).toLocaleString(undefined, {
+                            year: "numeric",
+                            month: "2-digit",
+                            day: "2-digit",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            hour12: false,
+                          })
+                          : ""}
+                    </small>
+                  )}
+                </div>
+                <button
+                  onClick={() => handleDeleteNotification(notification.id)}
+                  className="delete-notification-button"
+                >
+                  Delete
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <small>No guest notifications yet.</small>
+        )
+      }
+
+      {/* Toast Container */}
+      <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
+    </div >
   );
 }
 
