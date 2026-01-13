@@ -64,7 +64,7 @@ function RadioOperatorDashboard() {
     const notificationsColRef = collection(db, "guestNotifications");
     const q = query(
       notificationsColRef,
-      orderBy("timestamp", "desc"),
+      orderBy("timestampSort", "desc"),
       limit(10) // <-- Limit to 10 notifications
     );
     const unsubscribeNotifications = onSnapshot(q, (querySnapshot) => {
@@ -214,6 +214,7 @@ function RadioOperatorDashboard() {
           direction: direction,
           tender: selectedTender,
           timestamp: localTimestampString, // Store as string
+          timestampSort: localTimestamp, // Store as Firestore Timestamp for sorting
           portDayId: activePortDay.id,
         });
 
